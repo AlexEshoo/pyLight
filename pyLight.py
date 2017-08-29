@@ -8,9 +8,9 @@ inp = [0] * 90
 while True:
     msg = b''
     if inp[0] == 0:
-        inp = [10] * 90
+        inp = [10] * 3
     else:
-        inp = [0] * 90
+        inp = [0] * 3
 
     for n in range(len(inp)):
         msg += struct.pack('B', inp[n])

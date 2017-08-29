@@ -18,27 +18,23 @@ void setup() {
 
 }
 
-int strip_colors [30][3];
+int strip_colors[3];
 
 void loop() {
-  int i = 0;
   bool flag = false;
-  while (i <=30) {
-    while (Serial.available() > 0) {
-      flag = true;
-      int r = Serial.read();
-      int g = Serial.read();
-      int b = Serial.read();
-      
-      strip_colors[i][0] = r;
-      strip_colors[i][1] = g;
-      strip_colors[i][2] = b;
-      i++;
-      //delay(10);
-    }
+  while (Serial.available() > 2) {
+    flag = true;
+    int r = Serial.read();
+    int g = Serial.read();
+    int b = Serial.read();
+    
+    strip_colors[0] = r;
+    strip_colors[1] = g;
+    strip_colors[2] = b;
+    //delay(10);
   }
   for (int i; i<30; i++) {
-    strip.setPixelColor(i, strip.Color(strip_colors[i][0],strip_colors[i][1],strip_colors[i][2]));
+    strip.setPixelColor(i, strip.Color(strip_colors[0],strip_colors[1],strip_colors[2]));
   }
   strip.show();
   /*if (flag == true) {
@@ -46,7 +42,6 @@ void loop() {
     flag = false;
   }*/
 }
-
 
 void breath(int dt) {
   for (int i=0; i<256; i++){
