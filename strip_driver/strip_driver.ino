@@ -22,21 +22,24 @@ int strip_colors[3];
 
 void loop() {
   bool flag = false;
-  while (Serial.available() > 2) {
-    flag = true;
-    int r = Serial.read();
-    int g = Serial.read();
-    int b = Serial.read();
-    
-    strip_colors[0] = r;
-    strip_colors[1] = g;
-    strip_colors[2] = b;
-    //delay(10);
+  while (Serial.available() > 1) {
+    char x1 = Serial.read();
+    char x2 = Serial.read();
+    unsigned short result = x1 + (x2 << 8); // Reconstruct the Short
+
+    int B = result >> 0  & 0x1F;
+    int G = result >> 5  & 0x1F;
+    int R = result >> 10 & 0x1F;
+    Serial.println("R Value");
+    Serial.println(R);
+    Serial.println("G Value");
+    Serial.println(G);
+    Serial.println("B Value");
+    Serial.println(B);
+
+    strip.setPixelColor(0, strip.Color(0,0,0));
+    strip.show();
   }
-  for (int i; i<30; i++) {
-    strip.setPixelColor(i, strip.Color(strip_colors[0],strip_colors[1],strip_colors[2]));
-  }
-  strip.show();
   /*if (flag == true) {
     Serial.write(strip_colors[0][0]);
     flag = false;
