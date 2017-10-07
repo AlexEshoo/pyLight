@@ -17,7 +17,7 @@ def serializeColor(R,G,B):
 
 i=0
 while True:
-	comm.write(serializeColor(0,i,0))
+	comm.write(serializeColor(i,i,i))
 	if i < 31: i += 1
 	else: i = 0
-	time.sleep(1)
+	time.sleep(0.05)

@@ -15,19 +15,24 @@ void setup() {
 }
 
 void loop() {
-  bool flag = false;
+  byte bytes [2];
   while (Serial.available() > 1) {
-    unsigned char x1 = Serial.read();
-    unsigned char x2 = Serial.read();
-    unsigned short result = x1 + (x2 << 8); // Reconstruct the Short
+    Serial.readBytes(bytes, 2);
+    uint16_t encoded_rgb = bytes[0] + (bytes[1] << 8); // Reconstruct the Short
 
-    unsigned char B = result >> 0  & 0x1F; //ceil((result >> 0  & 0x1F) * 8.2258);
-    unsigned char G = result >> 5  & 0x1F; //ceil((result >> 5  & 0x1F) * 8.2258);
-    unsigned char R = result >> 10 & 0x1F; //ceil((result >> 10 & 0x1F) * 8.2258);
+    uint32_t color = decode_rgb(encoded_rgb);
     
-    strip.setPixelColor(0, strip.Color(R,G,B));
+    strip.setPixelColor(0, color);
     strip.show();
   }
+}
+
+uint32_t decode_rgb(uint16_t rgb){
+  uint8_t B = ceil( (rgb >> 0  & 0x1F) * 8.2258); // Scales to full
+  uint8_t G = ceil( (rgb >> 5  & 0x1F) * 8.2258); // 0 - 255
+  uint8_t R = ceil( (rgb >> 10 & 0x1F) * 8.2258); // range
+
+  return strip.Color(R, G, B);
 }
 
 void breath(int dt) {
