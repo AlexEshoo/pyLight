@@ -12,17 +12,22 @@ void setup() {
   strip.show();
 
   Serial.begin(115200);
+  while (Serial.available() > 0) {
+    Serial.read();
+  }
 }
 
 void loop() {
-  byte bytes [2];
-  while (Serial.available() > 1) {
-    Serial.readBytes(bytes, 2);
-    uint16_t encoded_rgb = bytes[0] + (bytes[1] << 8); // Reconstruct the Short
-
-    uint32_t color = decode_rgb(encoded_rgb);
-    
-    strip.setPixelColor(0, color);
+  byte bytes [60];
+  uint16_t encoded_rgb;
+  uint32_t color;
+  while (Serial.available() > 59) {
+    Serial.readBytes(bytes, 60);
+    for (int i=0; i<60; i+=2){
+      encoded_rgb = bytes[i] + (bytes[i+1] << 8); // Reconstruct the Short
+      color = decode_rgb(encoded_rgb);
+      strip.setPixelColor(i/2, color);
+    }
     strip.show();
   }
 }
