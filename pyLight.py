@@ -17,12 +17,23 @@ def serializeColor(R,G,B):
 	
 	return num
 
-bum = serializeColor(30,0,0)
+bum = serializeColor(0,0,0)
 print(bin(struct.unpack('H',bum)[0]))
 
+i=0
 while True:
-	comm.write(bum)
+	comm.write(serializeColor(0,i,0))
+	result = comm.read()
+	if result != b'':
+		print('byte1:', struct.unpack('B',result))
+	result = comm.read()
+	if result != b'':
+		print('byte2:', struct.unpack('B',result))
+	
+	if i < 31: i += 1
+	else: i = 0
 	time.sleep(1)
+	
 
 #time.sleep(1)
 #comm.write(struct.pack('B', 10))

@@ -27,19 +27,24 @@ void loop() {
     strip.setPixelColor(1, strip.Color(0,0,0));
     strip.show();
     
-    char x1 = Serial.read();
-    char x2 = Serial.read();
+    unsigned char x1 = Serial.read();
+    unsigned char x2 = Serial.read();
     unsigned short result = x1 + (x2 << 8); // Reconstruct the Short
 
-    unsigned char B = ceil((result >> 0  & 0x1F) * 8.2258);
-    unsigned char G = ceil((result >> 5  & 0x1F) * 8.2258);
-    unsigned char R = ceil((result >> 10 & 0x1F) * 8.2258);
-    Serial.println("R Value");
-    Serial.println(R);
-    Serial.println("G Value");
-    Serial.println(G);
-    Serial.println("B Value");
-    Serial.println(B);
+    unsigned char B = result >> 0  & 0x1F; //ceil((result >> 0  & 0x1F) * 8.2258);
+    unsigned char G = result >> 5  & 0x1F; //ceil((result >> 5  & 0x1F) * 8.2258);
+    unsigned char R = result >> 10 & 0x1F; //ceil((result >> 10 & 0x1F) * 8.2258);
+    
+    //Serial.println("R Value");
+    //Serial.println(R);
+    //Serial.println("G Value");
+    //Serial.println(G);
+    //Serial.println("B Value");
+    //Serial.println(B);
+    //Serial.write(result);
+
+    Serial.write(B);
+    Serial.write(G);
     
     strip.setPixelColor(0, strip.Color(R,G,B));
     strip.show();
