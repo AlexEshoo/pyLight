@@ -12,21 +12,11 @@ void setup() {
   strip.show();
 
   Serial.begin(115200);
-
-  String msg;
 }
-
-int strip_colors[3];
 
 void loop() {
   bool flag = false;
   while (Serial.available() > 1) {
-    strip.setPixelColor(1, strip.Color(10,10,10));
-    strip.show();
-    delay(500);
-    strip.setPixelColor(1, strip.Color(0,0,0));
-    strip.show();
-    
     unsigned char x1 = Serial.read();
     unsigned char x2 = Serial.read();
     unsigned short result = x1 + (x2 << 8); // Reconstruct the Short
@@ -35,24 +25,9 @@ void loop() {
     unsigned char G = result >> 5  & 0x1F; //ceil((result >> 5  & 0x1F) * 8.2258);
     unsigned char R = result >> 10 & 0x1F; //ceil((result >> 10 & 0x1F) * 8.2258);
     
-    //Serial.println("R Value");
-    //Serial.println(R);
-    //Serial.println("G Value");
-    //Serial.println(G);
-    //Serial.println("B Value");
-    //Serial.println(B);
-    //Serial.write(result);
-
-    Serial.write(B);
-    Serial.write(G);
-    
     strip.setPixelColor(0, strip.Color(R,G,B));
     strip.show();
   }
-  /*if (flag == true) {
-    Serial.write(strip_colors[0][0]);
-    flag = false;
-  }*/
 }
 
 void breath(int dt) {
