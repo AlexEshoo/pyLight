@@ -9,7 +9,6 @@ class KeyboardController(object):
         self.volume_level = 0
 
     def event_hook(self, event):
-        print(event.name)
         if event.name == "volume up" and event.event_type == "up":
             self.volume_level += 1
             for k in range(self.strip.LEN):
@@ -31,10 +30,9 @@ class KeyboardController(object):
         else:
             self.strip.send_uniform_color()
 
-        time.sleep(0.008)  # Prevent serial buffer overflow
+        time.sleep(self.strip.MIN_PERIOD)  # Prevent serial buffer overflow
 
 controller = KeyboardController('COM4')
 
 keyboard.wait()  # used to keep application alive.
                  # Should be taken care of by UI application in future
-
