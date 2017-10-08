@@ -12,35 +12,35 @@ void setup() {
   strip.show();
 
   Serial.begin(115200);
-
-  String msg;
-  
-
+  while (Serial.available() > 0) {
+    Serial.read();
+  }
 }
 
-int strip_colors[3];
-
 void loop() {
-  bool flag = false;
-  while (Serial.available() > 2) {
-    flag = true;
-    int r = Serial.read();
-    int g = Serial.read();
-    int b = Serial.read();
-    
-    strip_colors[0] = r;
-    strip_colors[1] = g;
-    strip_colors[2] = b;
-    //delay(10);
+  // Loop period 3~5 milliseconds
+  byte bytes [60]; // Buffer for incoming colors
+  uint16_t encoded_rgb;
+  uint32_t color;
+  bool extraBit;
+  
+  while (Serial.available() > 59) {
+    Serial.readBytes(bytes, 60);
+    for (int i=0; i<60; i+=2){
+      encoded_rgb = bytes[i] + (bytes[i+1] << 8); // Reconstruct the Short
+      color = decode_rgb(encoded_rgb);
+      extraBit = encoded_rgb >> 15; // unsued bit (future)
+      strip.setPixelColor(i/2, color);
+    }
+    strip.show();
   }
-  for (int i; i<30; i++) {
-    strip.setPixelColor(i, strip.Color(strip_colors[0],strip_colors[1],strip_colors[2]));
-  }
-  strip.show();
-  /*if (flag == true) {
-    Serial.write(strip_colors[0][0]);
-    flag = false;
-  }*/
+}
+
+uint32_t decode_rgb(uint16_t rgb){
+  uint8_t B = ceil( (rgb >> 0  & 0x1F) * 8.2258); // Scales to full
+  uint8_t G = ceil( (rgb >> 5  & 0x1F) * 8.2258); // 0 - 255
+  uint8_t R = ceil( (rgb >> 10 & 0x1F) * 8.2258); // range
+  return strip.Color(R, G, B);
 }
 
 void breath(int dt) {
