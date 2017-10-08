@@ -13,11 +13,11 @@ class Strip(object):
 
     @staticmethod
     def connect_arduino(com):
-        # Arduino Board Resets everytime the serial communication is activated and deactivated.
+        # Arduino Board Resets every time the serial communication is activated and deactivated.
         # This means that when this script starts there will be a delay before the arduino starts
         # responding. Keeping DTR High or Low seems to have no effect.
         comm = serial.Serial(com, 115200, timeout=0.1)
-        time.sleep(2)  # Allow Ardunio reset to happen to prevent buffer offset
+        time.sleep(2)  # Allow Arduino reset to happen to prevent buffer offset
 
         return comm
 
@@ -51,11 +51,12 @@ class Strip(object):
 
         return num
 
-    def send_color(self, r=0, g=0, b=0, x=False):
+    def _send_color(self, r=0, g=0, b=0, x=False):
         ser_color = self.serialize_color(r, g, b, x)
         self.COM.write(ser_color)
         return None
 
     def send_uniform_color(self, r=0, g=0, b=0):
         for k in range(self.LEN):
-            self.send_color(r,g,b)
+            self._send_color(r, g, b)
+        return None
