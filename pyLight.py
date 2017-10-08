@@ -1,6 +1,7 @@
 import serial
 import time
 import struct
+import keyboard
 
 def connectArduino(COM):
     # Arduino Board Resets everytime the serial communication is activated and deactivated.
@@ -58,3 +59,28 @@ def test():
         time.sleep(0.008) # Fastest you can go without overflow ~= 0.008 (125Hz)
 
 comm = connectArduino('COM4')
+OFF = serializeColor(0,0,0)
+
+def print_pressed_keys(e):
+	line = ', '.join(str(code) for code in keyboard._pressed_events)
+	# '\r' and end='' overwrites the previous line.
+	# ' '*40 prints 40 spaces at the end to ensure the previous line is cleared.
+	print('\r' + line + ' '*40, end='')
+
+def eventHook(event):
+    print(event.event_type)
+    if len(keyboard._pressed_events) > 0:
+        c = serializeColor(1,1,1)
+        for k in range(30):
+            sendColor(comm, c)
+        print('sent on')
+    else:
+        for k in range(30):
+            sendColor(comm, OFF)
+        print('sent off')
+    
+    time.sleep(0.008) # Prevent serial buffer overflow
+    
+
+keyboard.hook(eventHook)
+keyboard.wait()
