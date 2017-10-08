@@ -26,4 +26,4 @@ while True:
 			comm.write(off)
 	if i < 30: i += 1
 	else: i = 0
-	time.sleep(0.008) # Fastest you can go without overflow ~= 0.008
+	time.sleep(0.008) # Fastest you can go without overflow ~= 0.008 (125Hz)

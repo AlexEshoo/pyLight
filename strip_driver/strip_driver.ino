@@ -18,14 +18,18 @@ void setup() {
 }
 
 void loop() {
-  byte bytes [60];
+  // Loop period 3~5 milliseconds
+  byte bytes [60]; // Buffer for incoming colors
   uint16_t encoded_rgb;
   uint32_t color;
+  bool extraBit;
+  
   while (Serial.available() > 59) {
     Serial.readBytes(bytes, 60);
     for (int i=0; i<60; i+=2){
       encoded_rgb = bytes[i] + (bytes[i+1] << 8); // Reconstruct the Short
       color = decode_rgb(encoded_rgb);
+      extraBit = encoded_rgb >> 15; // unsued bit (future)
       strip.setPixelColor(i/2, color);
     }
     strip.show();
@@ -36,7 +40,6 @@ uint32_t decode_rgb(uint16_t rgb){
   uint8_t B = ceil( (rgb >> 0  & 0x1F) * 8.2258); // Scales to full
   uint8_t G = ceil( (rgb >> 5  & 0x1F) * 8.2258); // 0 - 255
   uint8_t R = ceil( (rgb >> 10 & 0x1F) * 8.2258); // range
-
   return strip.Color(R, G, B);
 }
 
