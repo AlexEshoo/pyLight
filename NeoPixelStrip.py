@@ -6,8 +6,9 @@ import struct
 class Strip(object):
     def __init__(self, com):
         self.COM = self.connect_arduino(com)
-        self.OFF = self.serialize_color(0, 0, 0, False)
+        self.OFF = self._serialize_color(0, 0, 0, False)
         self.LEN = 30  # Length of strip.
+        self.MIN_PERIOD = 0.008 # minimum period of cycling
 
         # .. todo:: Enable use of different length strips.
 
@@ -22,7 +23,7 @@ class Strip(object):
         return comm
 
     @staticmethod
-    def serialize_color(r, g, b, x=False):
+    def _serialize_color(r, g, b, x=False):
         """
         Packs color values into two serial bytes to be read by the arduino.
         
@@ -52,9 +53,27 @@ class Strip(object):
         return num
 
     def _send_color(self, r=0, g=0, b=0, x=False):
-        ser_color = self.serialize_color(r, g, b, x)
+        ser_color = self._serialize_color(r, g, b, x)
         self.COM.write(ser_color)
         return None
+
+    def send_colors(self, led_list):
+        if len(led_list) < self.LEN:
+            diff = self.LEN - len(led_list)
+            led_list.extend([[0,0,0]]*diff)
+
+        for k in range(self.LEN):
+            r = led_list[k][0]
+            g = led_list[k][1]
+            b = led_list[k][2]
+            self._send_color(r,g,b)
+
+    def send_single_color(self, led, r, g, b):
+        for k in range(self.LEN):
+            if k == led:
+                self._send_color(r,g,b)
+            else:
+                self._send_color()
 
     def send_uniform_color(self, r=0, g=0, b=0):
         for k in range(self.LEN):
