@@ -1,60 +1,40 @@
-import serial
+import keyboard
 import time
-import struct
+from NeoPixelStrip import Strip
 
-def connectArduino(COM):
-    # Arduino Board Resets everytime the serial communication is activated and deactivated.
-    # This means that when this script starts there will be a delay before the arduino starts
-    #responding. Keeping DTR High or Low seems to have no effect.
-    comm = serial.Serial(COM, 115200, timeout=0.1)
-    time.sleep(2) # Allow Ardunio reset to happen to prevent buffer offset
-    
-    return comm
+class KeyboardController(object):
+    def __init__(self, com):
+        self.strip = Strip(com)
+        keyboard.hook(self.event_hook)
+        self.volume_level = 0
 
-def serializeColor(R,G,B,X=False):
-    """
-    Packs color values into two serial bytes to be read by the arduino.
-    
-    :param R: Red Value int from 0 to 31
-    :param G: Green Value int from 0 to 31
-    :param B: Blue Value int from 0 to 31
-    :param X: Extra bit. Unused for now. (bool)
-    :returns: Packed bytes object of length 2
-    """
-    try:
-        R = int(R)
-        G = int(G)
-        B = int(B)
-    except ValueError:
-        print("Color values must be numeric")
-        return None
+    def event_hook(self, event):
+        print(event.name)
+        if event.name == "volume up" and event.event_type == "up":
+            self.volume_level += 1
+            for k in range(self.strip.LEN):
+                if self.volume_level > k:
+                    self.strip._send_color(31,31,31)
+                else:
+                    self.strip._send_color(0,0,0)
+        elif event.name == "volume down" and event.event_type == "down":
+            self.volume_level -= 1
+            for k in range(self.strip.LEN):
+                if self.volume_level > k:
+                    self.strip._send_color(31,31,31)
+                else:
+                    self.strip._send_color(0,0,0)
+        elif 'volume' in event.name:
+            pass
+        elif len(keyboard._pressed_events) > 0:
+            self.strip.send_uniform_color(10,0,0)
+        else:
+            self.strip.send_uniform_color()
 
-    for c in [R, G, B]:
-        if not c in range(32):
-            print("Color values must be between 0 and 31") # Make exceptions?
-            return None
+        time.sleep(0.008)  # Prevent serial buffer overflow
 
-    bits = B | (G << 5) | (R << 10) | (X <<15) # Bitshift values together
-    
-    num = struct.pack('H', bits) # Encode as unsigned long
-    
-    return num
+controller = KeyboardController('COM4')
 
-def sendColor(com, serColor):
-    com.write(serColor)
-    
-def test():
-    i=0
-    while True:
-        c = serializeColor(i,i,i)
-        OFF = serializeColor(0,0,0)
-        for k in range(30):
-            if k % 2 == 0:
-                sendColor(comm, c)
-            else:
-                sendColor(comm, OFF)
-        if i < 30: i += 1
-        else: i = 0
-        time.sleep(0.008) # Fastest you can go without overflow ~= 0.008 (125Hz)
+keyboard.wait()  # used to keep application alive.
+                 # Should be taken care of by UI application in future
 
-comm = connectArduino('COM4')
