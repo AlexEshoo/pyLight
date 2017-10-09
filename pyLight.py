@@ -5,12 +5,15 @@ from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from math import ceil
+import init_parmeters
 
 
 class KeyboardController(object):
     def __init__(self, com):
         self.strip = Strip(com)
         keyboard.hook(self.event_hook)
+
+        self.CONFIG_PARAMS = init_parmeters.CONFIG_PARAMETERS
 
         # Get initial interface volume level. Windows Only.
         devices = AudioUtilities.GetSpeakers()
@@ -64,8 +67,8 @@ class KeyboardController(object):
             scalar_volume = self.volume.GetMasterVolumeLevelScalar()
             self.volume_level = self._translate(scalar_volume, 0, 1, 0, self.strip.LEN)
 
-            c = [[0, 0, 0] for _ in range(self.strip.LEN)]
-            c[:self.volume_level] = [[1, 1, 1] for _ in range(self.volume_level)]
+            c = [[0,0,0] for _ in range(self.strip.LEN)]
+            c[:self.volume_level] = [self.CONFIG_PARAMS['VolumeColor'] for _ in range(self.volume_level)]
             self.strip.send_colors(c)
 
     def _translate(self, value, leftMin, leftMax, rightMin, rightMax):
