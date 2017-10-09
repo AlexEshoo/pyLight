@@ -1,13 +1,26 @@
 import keyboard
 import time
 from NeoPixelStrip import Strip
+from ctypes import cast, POINTER
+from comtypes import CLSCTX_ALL
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+from math import ceil
+
 
 class KeyboardController(object):
     def __init__(self, com):
         self.strip = Strip(com)
         keyboard.hook(self.event_hook)
-        self.volume_level = 0
 
+        # Get initial interface volume level. Windows Only.
+        devices = AudioUtilities.GetSpeakers()
+        interface = devices.Activate(
+            IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+        self.volume = cast(interface, POINTER(IAudioEndpointVolume))
+        scalar_volume = self.volume.GetMasterVolumeLevelScalar()
+        self.volume_level = self._translate(scalar_volume, 0, 1, 0, self.strip.LEN)
+
+        # Setup dispatcher for callback functions on keypress
         self.dispatch = dict()
         self.dispatch['esc'] = self.esc_press
         self.dispatch['volume up'] = self.volume_change
@@ -19,8 +32,6 @@ class KeyboardController(object):
 
 
     def event_hook(self, event):
-        print(event.name)
-        print(event.scan_code)
         if len(keyboard._pressed_events) > 0:
             try:
                 self.dispatch[event.name](event)
@@ -49,14 +60,19 @@ class KeyboardController(object):
             self.strip.send_single_color(num, 0, 10, 0)
 
     def volume_change(self, event):
-        if event.name == "volume up" and event.event_type == "down":
-            self.volume_level += 1
-        elif event.name == "volume down" and event.event_type == "down":
-            self.volume_level -= 1
+        if event.event_type == "down":
+            scalar_volume = self.volume.GetMasterVolumeLevelScalar()
+            self.volume_level = self._translate(scalar_volume, 0, 1, 0, self.strip.LEN)
 
-        c = [[0, 0, 0] for _ in range(self.strip.LEN)]
-        c[:self.volume_level] = [[1, 1, 1] for _ in range(self.volume_level)]
-        self.strip.send_colors(c)
+            c = [[0, 0, 0] for _ in range(self.strip.LEN)]
+            c[:self.volume_level] = [[1, 1, 1] for _ in range(self.volume_level)]
+            self.strip.send_colors(c)
+
+    def _translate(self, value, leftMin, leftMax, rightMin, rightMax):
+        leftSpan = leftMax - leftMin
+        rightSpan = rightMax - rightMin
+        valueScaled = float(value - leftMin) / float(leftSpan)
+        return int(ceil(rightMin + (valueScaled * rightSpan)))
 
 
 controller = KeyboardController('COM4')
