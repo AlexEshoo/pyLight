@@ -8,29 +8,40 @@ class KeyboardController(object):
         keyboard.hook(self.event_hook)
         self.volume_level = 0
 
+        self.dispatch = dict()
+        self.dispatch['esc'] = self.esc_press
+        self.dispatch['volume up'] = self.volume_change
+        self.dispatch['volume down'] = self.volume_change
+
+
     def event_hook(self, event):
-        if event.name == "volume up" and event.event_type == "up":
-            self.volume_level += 1
-            for k in range(self.strip.LEN):
-                if self.volume_level > k:
-                    self.strip._send_color(31,31,31)
-                else:
-                    self.strip._send_color(0,0,0)
-        elif event.name == "volume down" and event.event_type == "down":
-            self.volume_level -= 1
-            for k in range(self.strip.LEN):
-                if self.volume_level > k:
-                    self.strip._send_color(31,31,31)
-                else:
-                    self.strip._send_color(0,0,0)
+        if len(keyboard._pressed_events) > 0:
+            try:
+                self.dispatch[event.name](event)
+            except KeyError:
+                pass
         elif 'volume' in event.name:
             pass
-        elif len(keyboard._pressed_events) > 0:
-            self.strip.send_uniform_color(10,0,0)
         else:
             self.strip.send_uniform_color()
+            print("sent off")
 
         time.sleep(self.strip.MIN_PERIOD)  # Prevent serial buffer overflow
+
+    def esc_press(self, event):
+        if event.event_type == 'down':
+            self.strip.send_uniform_color(31, 0, 0)
+
+    def volume_change(self, event):
+        if event.name == "volume up" and event.event_type == "down":
+            self.volume_level += 1
+        elif event.name == "volume down" and event.event_type == "down":
+            self.volume_level -= 1
+
+        c = [[0, 0, 0] for _ in range(self.strip.LEN)]
+        c[:self.volume_level] = [[31, 31, 31] for _ in range(self.volume_level)]
+        self.strip.send_colors(c)
+
 
 controller = KeyboardController('COM4')
 
