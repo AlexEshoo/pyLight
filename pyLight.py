@@ -12,25 +12,41 @@ class KeyboardController(object):
         self.dispatch['esc'] = self.esc_press
         self.dispatch['volume up'] = self.volume_change
         self.dispatch['volume down'] = self.volume_change
+        for i in range(97, 123):
+            self.dispatch[chr(i)] = self.letter_press
+        for i in range(10):
+            self.dispatch[str(i)] = self.number_press
 
 
     def event_hook(self, event):
+        print(event.name)
+        print(event.scan_code)
         if len(keyboard._pressed_events) > 0:
             try:
                 self.dispatch[event.name](event)
             except KeyError:
                 pass
+
         elif 'volume' in event.name:
-            pass
+            pass  # Needed to prevent immediate off command for volume indication
+
         else:
             self.strip.send_uniform_color()
-            print("sent off")
 
         time.sleep(self.strip.MIN_PERIOD)  # Prevent serial buffer overflow
 
     def esc_press(self, event):
         if event.event_type == 'down':
             self.strip.send_uniform_color(31, 0, 0)
+
+    def letter_press(self, event):
+        if event.event_type == 'down':
+            self.strip.send_uniform_color(0, 10, 20)
+
+    def number_press(self, event):
+        if event.event_type == 'down':
+            num = int(event.name)
+            self.strip.send_single_color(num, 0, 10, 0)
 
     def volume_change(self, event):
         if event.name == "volume up" and event.event_type == "down":
@@ -39,7 +55,7 @@ class KeyboardController(object):
             self.volume_level -= 1
 
         c = [[0, 0, 0] for _ in range(self.strip.LEN)]
-        c[:self.volume_level] = [[31, 31, 31] for _ in range(self.volume_level)]
+        c[:self.volume_level] = [[1, 1, 1] for _ in range(self.volume_level)]
         self.strip.send_colors(c)
 
 
