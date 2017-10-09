@@ -58,9 +58,12 @@ class KeyboardController(object):
             self.strip.send_uniform_color(0, 10, 20)
 
     def number_press(self, event):
+        num = int(event.name)
         if event.event_type == 'down':
-            num = int(event.name)
             self.strip.send_single_color(num, 0, 10, 0)
+        else:
+            self.strip.send_single_color(num)
+
 
     def volume_change(self, event):
         if event.event_type == "down":

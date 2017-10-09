@@ -22,15 +22,20 @@ void loop() {
   byte bytes [60]; // Buffer for incoming colors
   uint16_t encoded_rgb;
   uint32_t color;
-  bool extraBit;
+  bool updateBit;  // If HIGH, update the pixel color
+                   // Allows some pixels to be skipped
+                   // on new incoming data buffer.
   
   while (Serial.available() > 59) {
     Serial.readBytes(bytes, 60);
     for (int i=0; i<60; i+=2){
       encoded_rgb = bytes[i] + (bytes[i+1] << 8); // Reconstruct the Short
-      color = decode_rgb(encoded_rgb);
-      extraBit = encoded_rgb >> 15; // unsued bit (future)
-      strip.setPixelColor(i/2, color);
+      updateBit = encoded_rgb >> 15;
+
+      if (updateBit == true){
+        color = decode_rgb(encoded_rgb);
+        strip.setPixelColor(i/2, color);
+      }
     }
     strip.show();
   }

@@ -23,7 +23,7 @@ class Strip(object):
         return comm
 
     @staticmethod
-    def _serialize_color(r, g, b, x=False):
+    def _serialize_color(r, g, b, update=True):
         """
         Packs color values into two serial bytes to be read by the arduino.
         
@@ -46,14 +46,14 @@ class Strip(object):
                 print("Color values must be between 0 and 31")  # Make exceptions?
                 return None
 
-        bits = b | (g << 5) | (r << 10) | (x << 15)  # Bitshift values together
+        bits = b | (g << 5) | (r << 10) | (update << 15)  # Bitshift values together
 
         num = struct.pack('H', bits)  # Encode as unsigned long
 
         return num
 
-    def _send_color(self, r=0, g=0, b=0, x=False):
-        ser_color = self._serialize_color(r, g, b, x)
+    def _send_color(self, r=0, g=0, b=0, update=True):
+        ser_color = self._serialize_color(r, g, b, update)
         self.COM.write(ser_color)
         return None
 
@@ -66,14 +66,16 @@ class Strip(object):
             r = led_list[k][0]
             g = led_list[k][1]
             b = led_list[k][2]
-            self._send_color(r,g,b)
+            self._send_color(r, g, b)
 
-    def send_single_color(self, led, r, g, b):
+    def send_single_color(self, led, r=0, g=0, b=0, clobber=False):
         for k in range(self.LEN):
             if k == led:
-                self._send_color(r,g,b)
-            else:
+                self._send_color(r, g, b)
+            elif clobber:
                 self._send_color()
+            else:
+                self._send_color(update=False)
 
     def send_uniform_color(self, r=0, g=0, b=0):
         for k in range(self.LEN):
