@@ -25,9 +25,14 @@ void loop() {
   bool updateBit;  // If HIGH, update the pixel color
                    // Allows some pixels to be skipped
                    // on new incoming data buffer.
+  static int b = 0;
   
-  while (Serial.available() > 59) {
-    Serial.readBytes(bytes, 60);
+  while (Serial.available() > 1) {
+    bytes[2*b] = Serial.read();
+    bytes[2*b+1] = Serial.read();
+    b++;
+  }
+  if (b == 59){
     for (int i=0; i<60; i+=2){
       encoded_rgb = bytes[i] + (bytes[i+1] << 8); // Reconstruct the Short
       updateBit = encoded_rgb >> 15;
@@ -38,6 +43,7 @@ void loop() {
       }
     }
     strip.show();
+    b = 0;
   }
 }
 
