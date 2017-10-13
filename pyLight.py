@@ -73,6 +73,36 @@ class KeyboardController(object):
         if len(keyboard._pressed_events) == 0:
             self.strip.send_uniform_color()
 
+    def _rainbow(self):
+        """
+        This is approximation. Will not cycle all
+        colors obviously. performance is not
+        great, but its a proof of concept.
+        :return:
+        """
+        while True:
+            for i in range(32):
+                rgb = self._wheel(i)
+                self.strip.send_uniform_color(rgb[0], rgb[1], rgb[2])
+                time.sleep(0.1)
+
+    def _wheel(self, wheel_pos):
+        """
+        This is approximation. Will not cycle all
+        colors obviously. performance is not
+        great, but its a proof of concept.
+        :param wheel_pos:
+        :return:
+        """
+        wheel_pos = 31 - wheel_pos
+        if wheel_pos < 11:
+            return [ 31 - wheel_pos * 3, 0, wheel_pos * 3 ]
+        if wheel_pos < 21:
+            wheel_pos -= 10
+            return [ 0, wheel_pos * 3, 31 - wheel_pos * 3 ]
+        wheel_pos -= 21
+        return [ wheel_pos * 3, 31 - wheel_pos * 3, 0 ]
+
     @staticmethod
     def _translate(value, left_min, left_max, right_min, right_max):
         left_span = left_max - left_min
