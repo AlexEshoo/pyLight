@@ -34,11 +34,7 @@ class KeyboardController(object):
             self.dispatch[str(i)] = self.number_press
 
     def event_hook(self, event):
-        try:
-            self.dispatch[event.name](event)
-        except KeyError:
-            self.other_press(event)
-
+        self.dispatch.get(event.name, self.other_press)(event)
         time.sleep(self.strip.MIN_PERIOD)  # Prevent serial buffer overflow
 
     def esc_press(self, event):
@@ -70,7 +66,8 @@ class KeyboardController(object):
             self.strip.send_colors(c)
 
     def other_press(self, event):
-        pass
+        if len(keyboard._pressed_events) == 0:
+            self.strip.send_uniform_color()
 
     def _rainbow(self):
         """
