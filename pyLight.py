@@ -70,8 +70,7 @@ class KeyboardController(object):
             self.strip.send_colors(c)
 
     def other_press(self, event):
-        if len(keyboard._pressed_events) == 0:
-            self.strip.send_uniform_color()
+        pass
 
     def _rainbow(self):
         """
@@ -87,13 +86,6 @@ class KeyboardController(object):
                 time.sleep(0.1)
 
     def _wheel(self, wheel_pos):
-        """
-        This is approximation. Will not cycle all
-        colors obviously. performance is not
-        great, but its a proof of concept.
-        :param wheel_pos:
-        :return:
-        """
         wheel_pos = 31 - wheel_pos
         if wheel_pos < 11:
             return [ 31 - wheel_pos * 3, 0, wheel_pos * 3 ]
