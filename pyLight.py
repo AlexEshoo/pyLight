@@ -28,6 +28,8 @@ class KeyboardController(object):
         self.dispatch['esc'] = self.esc_press
         self.dispatch['volume up'] = self.volume_change
         self.dispatch['volume down'] = self.volume_change
+        for key in ('next track', 'previous track', 'play/pause media'):
+            self.dispatch[key] = self.media_button_press
         for i in range(97, 123):
             self.dispatch[chr(i)] = self.letter_press
         for i in range(10):
@@ -65,8 +67,24 @@ class KeyboardController(object):
             c[:self.volume_level] = [self.CONFIG_PARAMS['VolumeColor'] for _ in range(self.volume_level)]
             self.strip.send_colors(c)
 
+    def media_button_press(self, event):
+        half = self.strip.LEN // 2
+        if event.event_type == 'down':
+            for i in range(half):
+                led = [[0,0,0]]*self.strip.LEN
+                for j in range(half):
+                    if j <= i and event.name == 'next track':
+                        led[j + half] = [0,31,0]
+                    elif half - j - 1 <= i and event.name == 'previous track':
+                        led[j] = [0, 31, 0]
+
+                self.strip.send_colors(led)
+                time.sleep(0.01)
+
+            self.strip.send_uniform_color()
+
     def other_press(self, event):
-        if len(keyboard._pressed_events) == 0:
+        if len(keyboard._pressed_events) == 0: # Needed to shut off strip when combos pressed.
             self.strip.send_uniform_color()
 
     def _rainbow(self):
