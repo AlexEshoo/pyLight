@@ -8,6 +8,13 @@ from math import ceil
 import init_parmeters
 
 
+def unhooked_event(func):
+    def wrapper(self, *args):
+        self.allowed_to_fire = False
+        keyboard.call_later(func, args=(self, *args))
+
+    return wrapper
+
 class KeyboardController(object):
     def __init__(self, com):
         self.strip = Strip(com)
@@ -28,16 +35,20 @@ class KeyboardController(object):
         self.dispatch['esc'] = self.esc_press
         self.dispatch['volume up'] = self.volume_change
         self.dispatch['volume down'] = self.volume_change
-        for key in ('next track', 'previous track', 'play/pause media'):
+        for key in ('next track', 'previous track', 'play/pause media', 'stop media'):
             self.dispatch[key] = self.media_button_press
         for i in range(97, 123):
             self.dispatch[chr(i)] = self.letter_press
         for i in range(10):
             self.dispatch[str(i)] = self.number_press
 
+        self.allowed_to_fire = True
+
     def event_hook(self, event):
-        self.dispatch.get(event.name, self.other_press)(event)
-        time.sleep(self.strip.MIN_PERIOD)  # Prevent serial buffer overflow
+        if self.allowed_to_fire:
+            #keyboard.call_later(self.dispatch.get(event.name, self.other_press), args = ([event]), delay=0.008)
+            self.dispatch.get(event.name, self.other_press)(event)
+            time.sleep(self.strip.MIN_PERIOD)  # Prevent serial buffer overflow
 
     def esc_press(self, event):
         if event.event_type == 'down':
@@ -67,21 +78,34 @@ class KeyboardController(object):
             c[:self.volume_level] = [self.CONFIG_PARAMS['VolumeColor'] for _ in range(self.volume_level)]
             self.strip.send_colors(c)
 
+    @unhooked_event
     def media_button_press(self, event):
         half = self.strip.LEN // 2
         if event.event_type == 'down':
-            for i in range(half):
-                led = [[0,0,0]]*self.strip.LEN
-                for j in range(half):
-                    if j <= i and event.name == 'next track':
-                        led[j + half] = [0,31,0]
-                    elif half - j - 1 <= i and event.name == 'previous track':
-                        led[j] = [0, 31, 0]
+            if 'track' in event.name:
+                for i in range(half):
+                    led = [[0,0,0]]*self.strip.LEN
+                    for j in range(half):
+                        if j <= i and event.name == 'next track':
+                            led[j + half] = [0,31,0]
+                        elif half - j - 1 <= i and event.name == 'previous track':
+                            led[j] = [0, 31, 0]
 
-                self.strip.send_colors(led)
-                time.sleep(0.01)
+                    self.strip.send_colors(led)
+                    time.sleep(0.01)
 
-            self.strip.send_uniform_color()
+                self.strip.send_uniform_color()
+
+            elif event.name == 'stop media':
+                self.strip.send_uniform_color(31, 0, 0)
+                time.sleep(0.05)
+                self.strip.send_uniform_color()
+                time.sleep(0.05)
+                self.strip.send_uniform_color(31, 0, 0)
+                time.sleep(0.05)
+                self.strip.send_uniform_color()
+
+        self.allowed_to_fire = True # I want to take this out of here somehow.
 
     def other_press(self, event):
         if len(keyboard._pressed_events) == 0: # Needed to shut off strip when combos pressed.
