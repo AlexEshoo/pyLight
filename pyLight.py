@@ -9,9 +9,13 @@ import init_parmeters
 
 
 def unhooked_event(func):
-    def wrapper(self, *args):
-        self.allowed_to_fire = False
-        keyboard.call_later(func, args=(self, *args))
+    def wrapper(self, event):
+        def double_wrap(self, event):
+            self.allowed_to_fire = False
+            func(self, event)
+            self.allowed_to_fire = True
+
+        keyboard.call_later(double_wrap, args = (self, event))
 
     return wrapper
 
@@ -58,7 +62,7 @@ class KeyboardController(object):
 
     def letter_press(self, event):
         if event.event_type == 'down':
-            self.strip.send_uniform_color(0, 10, 20)
+            self.strip.send_uniform_color(0, 15, 1)
         elif len(keyboard._pressed_events) == 0:
             self.strip.send_uniform_color()
 
@@ -104,8 +108,6 @@ class KeyboardController(object):
                 self.strip.send_uniform_color(31, 0, 0)
                 time.sleep(0.05)
                 self.strip.send_uniform_color()
-
-        self.allowed_to_fire = True # I want to take this out of here somehow.
 
     def other_press(self, event):
         if len(keyboard._pressed_events) == 0: # Needed to shut off strip when combos pressed.
