@@ -9,15 +9,29 @@ import init_parmeters
 
 
 def unhooked_event(func):
-    def wrapper(self, event):
-        def double_wrap(self, event):
-            self.allowed_to_fire = False
-            func(self, event)
-            self.allowed_to_fire = True
+    """
+    Decorator to prevent other callbacks from firing when the decorated callback is firing.
+    This is useful for callbacks which take a non-negligible amount of time to execute since it will
+    prevent post-execution of events queued during execution.
 
-        keyboard.call_later(double_wrap, args = (self, event))
+    Known limitations:
+    Sometimes when multiple callbacks that invoke this decorator are called in very fast succession, the serial buffer
+    will overflow. This can be simulated by holding down a key which triggers a decorated callback. A small percentage
+    of the time the buffer will overflow and the LED pattern will be unpredictable.
+    :param func:
+    :return:
+    """
+
+    def wrapper(self, event):
+        def double_wrap(inner_self, inner_event):  # Needed to comply with return object structure.
+            inner_self.allowed_to_fire = False
+            func(inner_self, inner_event)
+            inner_self.allowed_to_fire = True
+
+        keyboard.call_later(double_wrap, args=(self, event))
 
     return wrapper
+
 
 class KeyboardController(object):
     def __init__(self, com):
@@ -50,7 +64,6 @@ class KeyboardController(object):
 
     def event_hook(self, event):
         if self.allowed_to_fire:
-            #keyboard.call_later(self.dispatch.get(event.name, self.other_press), args = ([event]), delay=0.008)
             self.dispatch.get(event.name, self.other_press)(event)
             time.sleep(self.strip.MIN_PERIOD)  # Prevent serial buffer overflow
 
