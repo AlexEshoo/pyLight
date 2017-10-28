@@ -27,7 +27,7 @@ void loop() {
                    // Allows some pixels to be skipped
                    // on new incoming data buffer.
 
-  if (millis() - timer > 30000) {
+  if (millis() - timer > 5000) {
     breath(10);
   }
   
@@ -59,21 +59,27 @@ void breath(int dt) {
     for (int j=0; j<strip.numPixels(); j++) {
       strip.setPixelColor(j, strip.Color(i,0,0));
       if (Serial.available() > 0) {
+        for (int k=0; k<strip.numPixels(); k++) {
+          strip.setPixelColor(k, strip.Color(0,0,0));
+        }
         return;
       }
     }
     strip.show();
-    delay(dt);
+    delay(dt); // These are deadly to the serial buffer if too long
   }
   for (int i=255; i>-1; i--){
     for (int j=0; j<strip.numPixels(); j++) {
       strip.setPixelColor(j, strip.Color(i,0,0));
       if (Serial.available() > 0) {
+        for (int k=0; k<strip.numPixels(); k++) {
+          strip.setPixelColor(k, strip.Color(0,0,0));
+        }
         return;
       }
     }
     strip.show();
-    delay(dt);
+    delay(dt); // These are deadly to the serial buffer if too long
   }
 }
 
