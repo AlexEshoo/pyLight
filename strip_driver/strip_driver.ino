@@ -19,12 +19,17 @@ void setup() {
 
 void loop() {
   // Loop period 3~5 milliseconds
+  static uint32_t timer;
   byte bytes [60]; // Buffer for incoming colors
   uint16_t encoded_rgb;
   uint32_t color;
   bool updateBit;  // If HIGH, update the pixel color
                    // Allows some pixels to be skipped
                    // on new incoming data buffer.
+
+  if (millis() - timer > 30000) {
+    breath(10);
+  }
   
   while (Serial.available() > 59) {
     Serial.readBytes(bytes, 60);
@@ -38,6 +43,7 @@ void loop() {
       }
     }
     strip.show();
+    timer = millis();
   }
 }
 
@@ -52,6 +58,9 @@ void breath(int dt) {
   for (int i=0; i<256; i++){
     for (int j=0; j<strip.numPixels(); j++) {
       strip.setPixelColor(j, strip.Color(i,0,0));
+      if (Serial.available() > 0) {
+        return;
+      }
     }
     strip.show();
     delay(dt);
@@ -59,6 +68,9 @@ void breath(int dt) {
   for (int i=255; i>-1; i--){
     for (int j=0; j<strip.numPixels(); j++) {
       strip.setPixelColor(j, strip.Color(i,0,0));
+      if (Serial.available() > 0) {
+        return;
+      }
     }
     strip.show();
     delay(dt);
