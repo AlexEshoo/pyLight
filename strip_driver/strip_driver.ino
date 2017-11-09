@@ -10,11 +10,9 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(30, PIN, NEO_GRB + NEO_KHZ800);
 void setup() {
   strip.begin();
   strip.show();
+  strip.setBrightness(255); // Future use for setting max brightness
 
   Serial.begin(115200);
-  while (Serial.available() > 0) {
-    Serial.read();
-  }
 }
 
 void loop() {
@@ -27,8 +25,8 @@ void loop() {
                    // Allows some pixels to be skipped
                    // on new incoming data buffer.
 
-  if (millis() - timer > 30000) {
-    breath(10);
+  if (millis() - timer > 5000) {
+    rainbowCycle(50);
   }
   
   while (Serial.available() > 59) {
@@ -55,37 +53,108 @@ uint32_t decode_rgb(uint16_t rgb){
 }
 
 void breath(int dt) {
+  // TODO Update this with milli timer logic
   for (int i=0; i<256; i++){
     for (int j=0; j<strip.numPixels(); j++) {
       strip.setPixelColor(j, strip.Color(i,0,0));
       if (Serial.available() > 0) {
+        for (int k=0; k<strip.numPixels(); k++) {
+          strip.setPixelColor(k, strip.Color(0,0,0));
+        }
         return;
       }
     }
     strip.show();
-    delay(dt);
+    delay(dt); // These are deadly to the serial buffer if too long
   }
   for (int i=255; i>-1; i--){
     for (int j=0; j<strip.numPixels(); j++) {
       strip.setPixelColor(j, strip.Color(i,0,0));
       if (Serial.available() > 0) {
+        for (int k=0; k<strip.numPixels(); k++) {
+          strip.setPixelColor(k, strip.Color(0,0,0));
+        }
         return;
       }
     }
     strip.show();
-    delay(dt);
+    delay(dt); // These are deadly to the serial buffer if too long
   }
 }
 
+void rainbowCycle(uint8_t wait) {
+  uint16_t i, j;
+  uint32_t timer2 = millis();
+  
+  for(j=0; j<256 * 5; j++) { // 5 cycles of all colors on wheel
+    if (Serial.available() > 0) {
+      for (uint16_t k=0; k<strip.numPixels(); k++) {
+        strip.setPixelColor(k, strip.Color(0,0,0));
+      }
+      return;
+    }
+    if (millis() - timer2 > wait){
+      for(i=0; i< strip.numPixels(); i++) {
+        strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
+        if (Serial.available() > 0) {
+          for (uint16_t k=0; k<strip.numPixels(); k++) {
+            strip.setPixelColor(k, strip.Color(0,0,0));
+          }
+          return;
+        }
+      }
+      strip.show();
+      timer2 = millis();
+    }
+    else {
+      j--;
+    }
+  }
+}
+
+void rainbow(uint8_t wait) {
+  // this method needs work
+  // interrupt is not proper...
+  uint16_t i, j;
+  uint32_t timer3 = millis();
+
+  for(j=0; j<256; j++) {
+    if (Serial.available() > 0) {
+      for (uint16_t k=0; k<strip.numPixels(); k++) {
+        strip.setPixelColor(k, strip.Color(0,0,0));
+      }
+      return;
+    }
+    if (millis() - timer3 > wait) {
+      for(i=0; i<strip.numPixels(); i++) {
+        strip.setPixelColor(i, Wheel((i+j) & 255));
+        if (Serial.available() > 0) {
+          for (uint16_t k=0; k<strip.numPixels(); k++) {
+            strip.setPixelColor(k, strip.Color(0,0,0));
+          }
+          return;
+        }
+      }
+      timer3 = millis();
+    }
+    else {
+      j--;
+    }
+    strip.show();
+  }
+}
+
+// Input a value 0 to 255 to get a color value.
+// The colours are a transition r - g - b - back to r.
 uint32_t Wheel(byte WheelPos) {
   WheelPos = 255 - WheelPos;
   if(WheelPos < 85) {
-    return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+    return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3,0);
   }
   if(WheelPos < 170) {
     WheelPos -= 85;
-    return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+    return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3,0);
   }
   WheelPos -= 170;
-  return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+  return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0,0);
 }
