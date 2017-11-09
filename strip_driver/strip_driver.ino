@@ -26,7 +26,7 @@ void loop() {
                    // on new incoming data buffer.
 
   if (millis() - timer > 5000) {
-    rainbowCycle(5);
+    rainbowCycle(50);
   }
   
   while (Serial.available() > 59) {
@@ -53,6 +53,7 @@ uint32_t decode_rgb(uint16_t rgb){
 }
 
 void breath(int dt) {
+  // TODO Update this with milli timer logic
   for (int i=0; i<256; i++){
     for (int j=0; j<strip.numPixels(); j++) {
       strip.setPixelColor(j, strip.Color(i,0,0));
@@ -84,18 +85,15 @@ void breath(int dt) {
 void rainbowCycle(uint8_t wait) {
   uint16_t i, j;
   uint32_t timer2 = millis();
-  Serial.println("Started idle");
   
-  if (Serial.available() > 0) {
-    for (uint16_t k=0; k<strip.numPixels(); k++) {
-      strip.setPixelColor(k, strip.Color(0,0,0));
-    }
-    return;
-  }
   for(j=0; j<256 * 5; j++) { // 5 cycles of all colors on wheel
-    Serial.println("started outer loop");
+    if (Serial.available() > 0) {
+      for (uint16_t k=0; k<strip.numPixels(); k++) {
+        strip.setPixelColor(k, strip.Color(0,0,0));
+      }
+      return;
+    }
     if (millis() - timer2 > wait){
-      Serial.println("timer2 lapsed");
       for(i=0; i< strip.numPixels(); i++) {
         strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
         if (Serial.available() > 0) {
@@ -104,9 +102,9 @@ void rainbowCycle(uint8_t wait) {
           }
           return;
         }
-        timer2 = millis();
       }
       strip.show();
+      timer2 = millis();
     }
     else {
       j--;
@@ -115,20 +113,34 @@ void rainbowCycle(uint8_t wait) {
 }
 
 void rainbow(uint8_t wait) {
+  // this method needs work
+  // interrupt is not proper...
   uint16_t i, j;
+  uint32_t timer3 = millis();
 
   for(j=0; j<256; j++) {
-    for(i=0; i<strip.numPixels(); i++) {
-      strip.setPixelColor(i, Wheel((i+j) & 255));
-      if (Serial.available() > 0) {
-        for (uint16_t k=0; k<strip.numPixels(); k++) {
-          strip.setPixelColor(k, strip.Color(0,0,0));
-        }
-        return;
+    if (Serial.available() > 0) {
+      for (uint16_t k=0; k<strip.numPixels(); k++) {
+        strip.setPixelColor(k, strip.Color(0,0,0));
       }
+      return;
+    }
+    if (millis() - timer3 > wait) {
+      for(i=0; i<strip.numPixels(); i++) {
+        strip.setPixelColor(i, Wheel((i+j) & 255));
+        if (Serial.available() > 0) {
+          for (uint16_t k=0; k<strip.numPixels(); k++) {
+            strip.setPixelColor(k, strip.Color(0,0,0));
+          }
+          return;
+        }
+      }
+      timer3 = millis();
+    }
+    else {
+      j--;
     }
     strip.show();
-    delay(wait);
   }
 }
 
