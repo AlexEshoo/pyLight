@@ -83,19 +83,34 @@ void breath(int dt) {
 
 void rainbowCycle(uint8_t wait) {
   uint16_t i, j;
-
-  for(j=0; j<256 * 5; j++) { // 5 cycles of all colors on wheel
-    for(i=0; i< strip.numPixels(); i++) {
-      strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
-      if (Serial.available() > 0) {
-        for (uint16_t k=0; k<strip.numPixels(); k++) {
-          strip.setPixelColor(k, strip.Color(0,0,0));
-        }
-        return;
-      }
+  uint32_t timer2 = millis();
+  Serial.println("Started idle");
+  
+  if (Serial.available() > 0) {
+    for (uint16_t k=0; k<strip.numPixels(); k++) {
+      strip.setPixelColor(k, strip.Color(0,0,0));
     }
-    strip.show();
-    delay(wait);
+    return;
+  }
+  for(j=0; j<256 * 5; j++) { // 5 cycles of all colors on wheel
+    Serial.println("started outer loop");
+    if (millis() - timer2 > wait){
+      Serial.println("timer2 lapsed");
+      for(i=0; i< strip.numPixels(); i++) {
+        strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
+        if (Serial.available() > 0) {
+          for (uint16_t k=0; k<strip.numPixels(); k++) {
+            strip.setPixelColor(k, strip.Color(0,0,0));
+          }
+          return;
+        }
+        timer2 = millis();
+      }
+      strip.show();
+    }
+    else {
+      j--;
+    }
   }
 }
 
