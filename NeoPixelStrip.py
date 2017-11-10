@@ -4,8 +4,8 @@ import struct
 
 
 class Strip(object):
-    def __init__(self, com):
-        self.COM = self.connect_arduino(com)
+    def __init__(self, com, mode=0):
+        self.COM = self.connect_arduino(com, mode)
         self.OFF = self._serialize_color(0, 0, 0, False)
         self.LEN = 30  # Length of strip.
         self.MIN_PERIOD = 0.008 # minimum period of cycling
@@ -13,14 +13,20 @@ class Strip(object):
         # .. todo:: Enable use of different length strips.
 
     @staticmethod
-    def connect_arduino(com):
+    def connect_arduino(com, mode=0):
         # Arduino Board Resets every time the serial communication is activated and deactivated.
         # This means that when this script starts there will be a delay before the arduino starts
         # responding. Keeping DTR High or Low seems to have no effect.
         comm = serial.Serial(com, 115200, timeout=0.1)
-        time.sleep(2)  # Allow Arduino reset to happen to prevent buffer offset
+        time.sleep(2) # Allow Arduino reset to happen to prevent buffer offset
+        mode_val = struct.pack('B', mode)
+        comm.write(mode_val)
+        time.sleep(2)
 
         return comm
+
+    def disconnect(self):
+        self.COM.close()
 
     @staticmethod
     def _serialize_color(r, g, b, update=True):

@@ -35,7 +35,7 @@ def unhooked_event(func):
 
 class KeyboardController(object):
     def __init__(self, com):
-        self.strip = Strip(com)
+        self.strip = Strip(com, mode=0)
         keyboard.hook(self.event_hook)
 
         self.CONFIG_PARAMS = init_parmeters.CONFIG_PARAMETERS
@@ -61,6 +61,9 @@ class KeyboardController(object):
             self.dispatch[str(i)] = self.number_press
 
         self.allowed_to_fire = True
+
+    def disconnect(self):
+        self.strip.disconnect()
 
     def event_hook(self, event):
         if self.allowed_to_fire:
@@ -156,6 +159,10 @@ class KeyboardController(object):
         value_scaled = float(value - left_min) / float(left_span)
         return int(ceil(right_min + (value_scaled * right_span)))
 
+
+class ScreenshotController(object):
+    def __init__(self, com):
+        self.strip = Strip(com, mode=1)
 
 controller = KeyboardController('COM4')
 
