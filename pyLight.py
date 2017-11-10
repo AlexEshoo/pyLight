@@ -5,6 +5,8 @@ from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from math import ceil
+from PIL import Image, ImageGrab
+
 import init_parmeters
 
 
@@ -164,7 +166,36 @@ class ScreenshotController(object):
     def __init__(self, com):
         self.strip = Strip(com, mode=1)
 
-controller = KeyboardController('COM4')
+    def screenshotControl(self):
+        while True:
+            im = ImageGrab.grab()
+            colors = im.getcolors(2073600) # maximum colors for 1920x1080 pix
+            max_occurence, most_present = 0, 0
+            for c in colors:
+                if c[0] > max_occurence:
+                    (max_occurence, most_present) = c
 
-keyboard.wait()  # used to keep application alive.
+            r = most_present[0]
+            g = most_present[1]
+            b = most_present[2]
+
+            self.strip.send_uniform_color(r, g, b)
+
+    def demo(self):
+        i = 0
+        while True:
+            self.strip.send_uniform_color(i, i, i)
+            time.sleep(0.1)
+            if i == 255:
+                i = 0
+            else:
+                i += 1
+
+
+#controller = KeyboardController('COM4')
+controller = ScreenshotController('COM4')
+
+controller.screenshotControl()
+
+#keyboard.wait()  # used to keep application alive.
 # Should be taken care of by UI application in future
