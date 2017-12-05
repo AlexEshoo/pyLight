@@ -4,26 +4,32 @@ import struct
 
 
 class Strip(object):
-    def __init__(self, com):
-        self.COM = self.connect_arduino(com)
+    def __init__(self, com, mode=0):
+        self.COM = self.connect_arduino(com, mode)
         self.OFF = self._serialize_color(0, 0, 0, False)
         self.LEN = 30  # Length of strip.
         self.MIN_PERIOD = 0.008 # minimum period of cycling
 
         # .. todo:: Enable use of different length strips.
 
-    @staticmethod
-    def connect_arduino(com):
+    def connect_arduino(self, com, mode=0):
         # Arduino Board Resets every time the serial communication is activated and deactivated.
         # This means that when this script starts there will be a delay before the arduino starts
         # responding. Keeping DTR High or Low seems to have no effect.
         comm = serial.Serial(com, 115200, timeout=0.1)
-        time.sleep(2)  # Allow Arduino reset to happen to prevent buffer offset
+        time.sleep(2) # Allow Arduino reset to happen to prevent buffer offset
+        mode_val = struct.pack('B', mode)
+        comm.write(mode_val)
+        time.sleep(2)
+
+        self.MODE = mode
 
         return comm
 
-    @staticmethod
-    def _serialize_color(r, g, b, update=True):
+    def disconnect(self):
+        self.COM.close()
+
+    def _serialize_color(self, r, g, b, update=True):
         """
         Packs color values into two serial bytes to be read by the arduino.
         
@@ -33,28 +39,40 @@ class Strip(object):
         :param x: Extra bit. Unused for now. (bool)
         :returns: Packed bytes object of length 2
         """
-        try:
-            r = int(r)
-            g = int(g)
-            b = int(b)
-        except ValueError:
-            print("Color values must be numeric")
-            return None
-
-        for c in [r, g, b]:
-            if c not in range(32):
-                print("Color values must be between 0 and 31")  # Make exceptions?
+        if self.MODE == 0:
+            try:
+                r = int(r)
+                g = int(g)
+                b = int(b)
+            except ValueError:
+                print("Color values must be numeric")
                 return None
 
-        bits = b | (g << 5) | (r << 10) | (update << 15)  # Bitshift values together
+            for c in [r, g, b]:
+                if c not in range(32):
+                    print("Color values must be between 0 and 31")  # Make exceptions?
+                    return None
 
-        num = struct.pack('H', bits)  # Encode as unsigned long
+            bits = b | (g << 5) | (r << 10) | (update << 15)  # Bitshift values together
 
-        return num
+            num = struct.pack('H', bits)  # Encode as unsigned long
+
+            return num
+
 
     def _send_color(self, r=0, g=0, b=0, update=True):
-        ser_color = self._serialize_color(r, g, b, update)
-        self.COM.write(ser_color)
+        if self.MODE == 0:
+            ser_color = self._serialize_color(r, g, b, update)
+            self.COM.write(ser_color)
+
+        elif self.MODE == 1:
+            r_char = struct.pack('B', r)
+            g_char = struct.pack('B', g)
+            b_char = struct.pack('B', b)
+            self.COM.write(r_char)
+            self.COM.write(g_char)
+            self.COM.write(b_char)
+
         return None
 
     def send_colors(self, led_list):
@@ -78,6 +96,9 @@ class Strip(object):
                 self._send_color(update=False)
 
     def send_uniform_color(self, r=0, g=0, b=0):
-        for k in range(self.LEN):
+        if self.MODE == 0:
+            for k in range(self.LEN):
+                self._send_color(r, g, b)
+            return None
+        elif self.MODE == 1:
             self._send_color(r, g, b)
-        return None

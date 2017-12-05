@@ -7,17 +7,27 @@
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(30, PIN, NEO_GRB + NEO_KHZ800);
 
+byte MODE = 0;
+
 void setup() {
   strip.begin();
   strip.show();
   strip.setBrightness(255); // Future use for setting max brightness
 
+  uint32_t setup_timer = millis();
+  
   Serial.begin(115200);
+  while (millis() - setup_timer < 5000) {
+    if (Serial.available() > 0) {
+      MODE = Serial.read();
+      break;
+    }
+  }
 }
 
 void loop() {
   // Loop period 3~5 milliseconds
-  static uint32_t timer;
+  static uint32_t timer = millis();
   byte bytes [60]; // Buffer for incoming colors
   uint16_t encoded_rgb;
   uint32_t color;
@@ -25,26 +35,42 @@ void loop() {
                    // Allows some pixels to be skipped
                    // on new incoming data buffer.
 
-  if (millis() - timer > 5000) {
-    rainbowCycle(50);
+  if (millis() - timer > 10000) {
+    rainbowCycle(5);
   }
+  else if (MODE == 0) {
+    while (Serial.available() > 59) {
+      Serial.readBytes(bytes, 60);
+      for (int i=0; i<60; i+=2){
+        encoded_rgb = bytes[i] + (bytes[i+1] << 8); // Reconstruct the Short
+        updateBit = encoded_rgb >> 15;
   
-  while (Serial.available() > 59) {
-    Serial.readBytes(bytes, 60);
-    for (int i=0; i<60; i+=2){
-      encoded_rgb = bytes[i] + (bytes[i+1] << 8); // Reconstruct the Short
-      updateBit = encoded_rgb >> 15;
-
-      if (updateBit == true){
-        color = decode_rgb(encoded_rgb);
-        strip.setPixelColor(i/2, color);
+        if (updateBit == true){
+          color = decode_rgb(encoded_rgb);
+          strip.setPixelColor(i/2, color);
+        }
       }
+      strip.show();
+      timer = millis();
     }
-    strip.show();
-    timer = millis();
+  }
+  else if (MODE == 1) {
+    while (Serial.available() > 2) {
+      Serial.readBytes(bytes, 3);
+      uint8_t r = bytes[0];
+      uint8_t g = bytes[1];
+      uint8_t b = bytes[2];
+  
+      uint32_t c = strip.Color(r,g,b);
+  
+      for (int i=0; i<strip.numPixels(); i++) {
+         strip.setPixelColor(i, c);
+      }
+      strip.show();
+      timer = millis();
+    }
   }
 }
-
 uint32_t decode_rgb(uint16_t rgb){
   uint8_t B = ceil( (rgb >> 0  & 0x1F) * 8.2258); // Scales to full
   uint8_t G = ceil( (rgb >> 5  & 0x1F) * 8.2258); // 0 - 255

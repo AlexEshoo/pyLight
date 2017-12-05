@@ -5,6 +5,12 @@ from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from math import ceil
+from PIL import Image, ImageGrab
+import scipy
+import scipy.misc
+import scipy.cluster
+import numpy as np
+
 import init_parmeters
 
 
@@ -35,7 +41,7 @@ def unhooked_event(func):
 
 class KeyboardController(object):
     def __init__(self, com):
-        self.strip = Strip(com)
+        self.strip = Strip(com, mode=0)
         keyboard.hook(self.event_hook)
 
         self.CONFIG_PARAMS = init_parmeters.CONFIG_PARAMETERS
@@ -61,6 +67,9 @@ class KeyboardController(object):
             self.dispatch[str(i)] = self.number_press
 
         self.allowed_to_fire = True
+
+    def disconnect(self):
+        self.strip.disconnect()
 
     def event_hook(self, event):
         if self.allowed_to_fire:
@@ -157,7 +166,35 @@ class KeyboardController(object):
         return int(ceil(right_min + (value_scaled * right_span)))
 
 
-controller = KeyboardController('COM4')
+class ScreenshotController(object):
+    def __init__(self, com):
+        self.strip = Strip(com, mode=1)
 
-keyboard.wait()  # used to keep application alive.
+    def screenshotControl(self):
+        NUM_CLUSTERS = 3
+
+        while True:
+            im = ImageGrab.grab()
+            im = im.resize((192,108))
+            ar = np.asfarray(im)
+            shape = ar.shape
+            ar = ar.reshape(scipy.product(shape[:2]), shape[2])
+            codes, dist = scipy.cluster.vq.kmeans(ar, NUM_CLUSTERS)
+
+            vecs, dist = scipy.cluster.vq.vq(ar, codes) # assign codes
+            counts, bins = scipy.histogram(vecs, len(codes))
+
+            index_max = scipy.argmax(counts) # find most frequent
+            peak = codes[index_max]
+
+            r = int(round(peak[0]))
+            g = int(round(peak[1]))
+            b = int(round(peak[2]))
+
+            self.strip.send_uniform_color(r, g, b)
+
+# controller = KeyboardController('COM4')
+controller = ScreenshotController('COM4')
+controller.screenshotControl()
+# keyboard.wait()  # used to keep application alive.
 # Should be taken care of by UI application in future
