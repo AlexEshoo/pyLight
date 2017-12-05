@@ -6,6 +6,10 @@ from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from math import ceil
 from PIL import Image, ImageGrab
+import scipy
+import scipy.misc
+import scipy.cluster
+import numpy as np
 
 import init_parmeters
 
@@ -167,35 +171,30 @@ class ScreenshotController(object):
         self.strip = Strip(com, mode=1)
 
     def screenshotControl(self):
+        NUM_CLUSTERS = 3
+
         while True:
             im = ImageGrab.grab()
-            colors = im.getcolors(2073600) # maximum colors for 1920x1080 pix
-            max_occurence, most_present = 0, 0
-            for c in colors:
-                if c[0] > max_occurence:
-                    (max_occurence, most_present) = c
+            im = im.resize((192,108))
+            ar = np.asfarray(im)
+            shape = ar.shape
+            ar = ar.reshape(scipy.product(shape[:2]), shape[2])
+            codes, dist = scipy.cluster.vq.kmeans(ar, NUM_CLUSTERS)
 
-            r = most_present[0]
-            g = most_present[1]
-            b = most_present[2]
+            vecs, dist = scipy.cluster.vq.vq(ar, codes) # assign codes
+            counts, bins = scipy.histogram(vecs, len(codes))
+
+            index_max = scipy.argmax(counts) # find most frequent
+            peak = codes[index_max]
+
+            r = int(round(peak[0]))
+            g = int(round(peak[1]))
+            b = int(round(peak[2]))
 
             self.strip.send_uniform_color(r, g, b)
 
-    def demo(self):
-        i = 0
-        while True:
-            self.strip.send_uniform_color(i, i, i)
-            time.sleep(0.1)
-            if i == 255:
-                i = 0
-            else:
-                i += 1
-
-
-#controller = KeyboardController('COM4')
+# controller = KeyboardController('COM4')
 controller = ScreenshotController('COM4')
-
 controller.screenshotControl()
-
-#keyboard.wait()  # used to keep application alive.
+# keyboard.wait()  # used to keep application alive.
 # Should be taken care of by UI application in future
