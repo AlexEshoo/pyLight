@@ -110,10 +110,10 @@ class KeyboardController(object):
         if event.event_type == 'down':
             if 'track' in event.name:
                 for i in range(half):
-                    led = [[0,0,0]]*self.strip.LEN
+                    led = [[0, 0, 0]] * self.strip.LEN
                     for j in range(half):
                         if j <= i and event.name == 'next track':
-                            led[j + half] = [0,31,0]
+                            led[j + half] = [0, 31, 0]
                         elif half - j - 1 <= i and event.name == 'previous track':
                             led[j] = [0, 31, 0]
 
@@ -132,7 +132,7 @@ class KeyboardController(object):
                 self.strip.send_uniform_color()
 
     def other_press(self, event):
-        if len(keyboard._pressed_events) == 0: # Needed to shut off strip when combos pressed.
+        if len(keyboard._pressed_events) == 0:  # Needed to shut off strip when combos pressed.
             self.strip.send_uniform_color()
 
     def _rainbow(self):
@@ -151,12 +151,12 @@ class KeyboardController(object):
     def _wheel(self, wheel_pos):
         wheel_pos = 31 - wheel_pos
         if wheel_pos < 11:
-            return [ 31 - wheel_pos * 3, 0, wheel_pos * 3 ]
+            return [31 - wheel_pos * 3, 0, wheel_pos * 3]
         if wheel_pos < 21:
             wheel_pos -= 10
-            return [ 0, wheel_pos * 3, 31 - wheel_pos * 3 ]
+            return [0, wheel_pos * 3, 31 - wheel_pos * 3]
         wheel_pos -= 21
-        return [ wheel_pos * 3, 31 - wheel_pos * 3, 0 ]
+        return [wheel_pos * 3, 31 - wheel_pos * 3, 0]
 
     @staticmethod
     def _translate(value, left_min, left_max, right_min, right_max):
@@ -172,19 +172,25 @@ class ScreenshotController(object):
 
     def screenshotControl(self):
         NUM_CLUSTERS = 3
+        ar = np.array([[0, 0], [0, 0]])
+        im = Image.fromarray(ar)  # Init im to prevent exception if first try fails.
 
         while True:
-            im = ImageGrab.grab()
-            im = im.resize((192,108))
+            try:
+                im = ImageGrab.grab()
+            except OSError:
+                pass  # continue using the current image until windows stops being so stupid.
+
+            im = im.resize((192, 108))
             ar = np.asfarray(im)
             shape = ar.shape
             ar = ar.reshape(scipy.product(shape[:2]), shape[2])
             codes, dist = scipy.cluster.vq.kmeans(ar, NUM_CLUSTERS)
 
-            vecs, dist = scipy.cluster.vq.vq(ar, codes) # assign codes
+            vecs, dist = scipy.cluster.vq.vq(ar, codes)  # assign codes
             counts, bins = scipy.histogram(vecs, len(codes))
 
-            index_max = scipy.argmax(counts) # find most frequent
+            index_max = scipy.argmax(counts)  # find most frequent
             peak = codes[index_max]
 
             r = int(round(peak[0]))
@@ -192,6 +198,7 @@ class ScreenshotController(object):
             b = int(round(peak[2]))
 
             self.strip.send_uniform_color(r, g, b)
+
 
 # controller = KeyboardController('COM4')
 controller = ScreenshotController('COM4')
