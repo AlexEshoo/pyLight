@@ -148,7 +148,8 @@ class KeyboardController(object):
                 self.strip.send_uniform_color(rgb[0], rgb[1], rgb[2])
                 time.sleep(0.1)
 
-    def _wheel(self, wheel_pos):
+    @staticmethod
+    def _wheel(wheel_pos):
         wheel_pos = 31 - wheel_pos
         if wheel_pos < 11:
             return [31 - wheel_pos * 3, 0, wheel_pos * 3]
