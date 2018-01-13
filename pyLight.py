@@ -171,8 +171,8 @@ class ScreenshotController(object):
     def __init__(self, com):
         self.strip = Strip(com, mode=1)
 
-    def screenshotControl(self):
-        NUM_CLUSTERS = 3
+    def screenshot_control(self):
+        num_clusters = 3
         ar = np.array([[0, 0], [0, 0]])
         im = Image.fromarray(ar)  # Init im to prevent exception if first try fails.
 
@@ -186,7 +186,7 @@ class ScreenshotController(object):
             ar = np.asfarray(im)
             shape = ar.shape
             ar = ar.reshape(scipy.product(shape[:2]), shape[2])
-            codes, dist = scipy.cluster.vq.kmeans(ar, NUM_CLUSTERS)
+            codes, dist = scipy.cluster.vq.kmeans(ar, num_clusters)
 
             vecs, dist = scipy.cluster.vq.vq(ar, codes)  # assign codes
             counts, bins = scipy.histogram(vecs, len(codes))
@@ -203,6 +203,6 @@ class ScreenshotController(object):
 
 # controller = KeyboardController('COM4')
 controller = ScreenshotController('COM4')
-controller.screenshotControl()
+controller.screenshot_control()
 # keyboard.wait()  # used to keep application alive.
 # Should be taken care of by UI application in future
