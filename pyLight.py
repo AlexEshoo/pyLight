@@ -200,9 +200,9 @@ class ScreenshotController(object):
 
             self.strip.send_uniform_color(r, g, b)
 
-
-# controller = KeyboardController('COM4')
-controller = ScreenshotController('COM4')
-controller.screenshot_control()
-# keyboard.wait()  # used to keep application alive.
-# Should be taken care of by UI application in future
+if __name__ == "__main__":
+    # controller = KeyboardController('COM4')
+    controller = ScreenshotController('COM4')
+    controller.screenshot_control()
+    # keyboard.wait()  # used to keep application alive.
+    # Should be taken care of by UI application in future
