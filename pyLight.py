@@ -170,13 +170,19 @@ class KeyboardController(object):
 class ScreenshotController(object):
     def __init__(self, com):
         self.strip = Strip(com, mode=1)
+        self.controlling = True
+
+        self.screenshot_control()
+
+    def disconnect(self):
+        self.strip.disconnect()
 
     def screenshot_control(self):
         num_clusters = 3
         ar = np.array([[0, 0], [0, 0]])
         im = Image.fromarray(ar)  # Init im to prevent exception if first try fails.
 
-        while True:
+        while self.controlling:
             try:
                 im = ImageGrab.grab()
             except OSError:
@@ -199,6 +205,9 @@ class ScreenshotController(object):
             b = int(round(peak[2]))
 
             self.strip.send_uniform_color(r, g, b)
+
+CONTROL_MODES = {"Keypresses": KeyboardController,
+                 "Screen Color": ScreenshotController, }
 
 if __name__ == "__main__":
     # controller = KeyboardController('COM4')
