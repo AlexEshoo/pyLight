@@ -2,6 +2,7 @@ import pyLight
 from gui import Ui_MainWindow
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtCore import QThread
 
 class PyLightApp(Ui_MainWindow):
     def __init__(self, window):
@@ -22,11 +23,24 @@ class PyLightApp(Ui_MainWindow):
     def doApply(self):
         control = self.controlModeComboBox.currentText()
         if self.controller:
-            self.controller.disconnect()
+            self.worker.stop()
 
-        self.controller = pyLight.CONTROL_MODES[control]('COM4')  # locks up GUI...
+        self.controller = pyLight.CONTROL_MODES[control]
 
-        print("Apply Pressed")
+        self.worker = workerThread(self.controller)
+        self.worker.start()
+
+
+class workerThread(QThread):
+    def __init__(self, worker):
+        QThread.__init__(self)
+        self.worker = worker
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        self.controller = self.worker('COM4')
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
