@@ -170,13 +170,19 @@ class KeyboardController(object):
 class ScreenshotController(object):
     def __init__(self, com):
         self.strip = Strip(com, mode=1)
+        self.controlling = True
+
+        #self.screenshot_control()
+
+    def disconnect(self):
+        self.strip.disconnect()
 
     def screenshot_control(self):
         num_clusters = 3
         ar = np.array([[0, 0], [0, 0]])
         im = Image.fromarray(ar)  # Init im to prevent exception if first try fails.
 
-        while True:
+        while self.controlling:
             try:
                 im = ImageGrab.grab()
             except OSError:
@@ -200,9 +206,40 @@ class ScreenshotController(object):
 
             self.strip.send_uniform_color(r, g, b)
 
+    def send_major_color(self):
+        num_clusters = 3
+        ar = np.array([[0, 0], [0, 0]])
+        im = Image.fromarray(ar)  # Init im to prevent exception if first try fails.
 
-# controller = KeyboardController('COM4')
-controller = ScreenshotController('COM4')
-controller.screenshot_control()
-# keyboard.wait()  # used to keep application alive.
-# Should be taken care of by UI application in future
+        try:
+            im = ImageGrab.grab()
+        except OSError:
+            pass  # continue using the current image until windows stops being so stupid.
+
+        im = im.resize((192, 108))
+        ar = np.asfarray(im)
+        shape = ar.shape
+        ar = ar.reshape(scipy.product(shape[:2]), shape[2])
+        codes, dist = scipy.cluster.vq.kmeans(ar, num_clusters)
+
+        vecs, dist = scipy.cluster.vq.vq(ar, codes)  # assign codes
+        counts, bins = scipy.histogram(vecs, len(codes))
+
+        index_max = scipy.argmax(counts)  # find most frequent
+        peak = codes[index_max]
+
+        r = int(round(peak[0]))
+        g = int(round(peak[1]))
+        b = int(round(peak[2]))
+
+        self.strip.send_uniform_color(r, g, b)
+
+CONTROL_MODES = {"Keypresses": KeyboardController,
+                 "Screen Color": ScreenshotController, }
+
+if __name__ == "__main__":
+    #controller = KeyboardController('COM4')
+    controller = ScreenshotController('COM4')
+    controller.screenshot_control()
+    #keyboard.wait()  # used to keep application alive.
+    # Should be taken care of by UI application in future
