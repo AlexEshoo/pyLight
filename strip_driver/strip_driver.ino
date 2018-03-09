@@ -37,6 +37,7 @@ void loop() {
 
   if (millis() - timer > 10000) {
     rainbowCycle(5);
+    timer = millis();  // Reset Timer on idle exit.
   }
   else if (MODE == 0) {
     while (Serial.available() > 59) {
