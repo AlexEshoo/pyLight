@@ -78,20 +78,20 @@ class KeyboardController(object):
 
     def esc_press(self, event):
         if event.event_type == 'down':
-            self.strip.send_uniform_color(31, 0, 0)
+            self.strip.send_uniform_color(255, 0, 0)
         elif len(keyboard._pressed_events) == 0:
             self.strip.send_uniform_color()
 
     def letter_press(self, event):
         if event.event_type == 'down':
-            self.strip.send_uniform_color(0, 15, 1)
+            self.strip.send_uniform_color(0, 125, 1)
         elif len(keyboard._pressed_events) == 0:
             self.strip.send_uniform_color()
 
     def number_press(self, event):
         num = int(event.name)
         if event.event_type == 'down':
-            self.strip.send_single_color(num, 0, 10, 0)
+            self.strip.send_single_color(num, 0, 83, 0)
         else:
             self.strip.send_single_color(num)
 
@@ -113,9 +113,9 @@ class KeyboardController(object):
                     led = [[0, 0, 0]] * self.strip.LEN
                     for j in range(half):
                         if j <= i and event.name == 'next track':
-                            led[j + half] = [0, 31, 0]
+                            led[j + half] = [0, 255, 0]
                         elif half - j - 1 <= i and event.name == 'previous track':
-                            led[j] = [0, 31, 0]
+                            led[j] = [0, 255, 0]
 
                     self.strip.send_colors(led)
                     time.sleep(0.01)
@@ -123,11 +123,11 @@ class KeyboardController(object):
                 self.strip.send_uniform_color()
 
             elif event.name == 'stop media':
-                self.strip.send_uniform_color(31, 0, 0)
+                self.strip.send_uniform_color(255, 0, 0)
                 time.sleep(0.05)
                 self.strip.send_uniform_color()
                 time.sleep(0.05)
-                self.strip.send_uniform_color(31, 0, 0)
+                self.strip.send_uniform_color(255, 0, 0)
                 time.sleep(0.05)
                 self.strip.send_uniform_color()
 
@@ -238,8 +238,8 @@ CONTROL_MODES = {"Keypresses": KeyboardController,
                  "Screen Color": ScreenshotController, }
 
 if __name__ == "__main__":
-    #controller = KeyboardController('COM4')
-    controller = ScreenshotController('COM4')
-    controller.screenshot_control()
-    #keyboard.wait()  # used to keep application alive.
+    controller = KeyboardController('COM4')
+    #controller = ScreenshotController('COM4')
+    #controller.screenshot_control()
+    keyboard.wait()  # used to keep application alive.
     # Should be taken care of by UI application in future

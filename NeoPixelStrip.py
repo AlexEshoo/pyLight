@@ -2,13 +2,16 @@ import serial
 import time
 import struct
 
+from math import ceil
+
 
 class Strip(object):
     def __init__(self, com, mode=0):
-        self.COM = self.connect_arduino(com, mode)
+        self.MODE = mode
+        self.COM = self.connect_arduino(com, self.MODE)
         self.OFF = self._serialize_color(0, 0, 0, False)
         self.LEN = 30  # Length of strip.
-        self.MIN_PERIOD = 0.008 # minimum period of cycling
+        self.MIN_PERIOD = 0.008  # minimum period of cycling
 
         # .. todo:: Enable use of different length strips.
 
@@ -17,12 +20,10 @@ class Strip(object):
         # This means that when this script starts there will be a delay before the arduino starts
         # responding. Keeping DTR High or Low seems to have no effect.
         comm = serial.Serial(com, 115200, timeout=0.1)
-        time.sleep(2) # Allow Arduino reset to happen to prevent buffer offset
+        time.sleep(2)  # Allow Arduino reset to happen to prevent buffer offset
         mode_val = struct.pack('B', mode)
         comm.write(mode_val)
         time.sleep(2)
-
-        self.MODE = mode
 
         return comm
 
@@ -33,32 +34,22 @@ class Strip(object):
         """
         Packs color values into two serial bytes to be read by the arduino.
         
-        :param r: Red Value int from 0 to 31
-        :param g: Green Value int from 0 to 31
-        :param b: Blue Value int from 0 to 31
-        :param x: Extra bit. Unused for now. (bool)
+        :param r: Red Value int from 0 to 255
+        :param g: Green Value int from 0 to 255
+        :param b: Blue Value int from 0 to 255
+        :param update: boolean value. Use to suppress an update.
         :returns: Packed bytes object of length 2
         """
         if self.MODE == 0:
-            try:
-                r = int(r)
-                g = int(g)
-                b = int(b)
-            except ValueError:
-                print("Color values must be numeric")
-                return None
-
-            for c in [r, g, b]:
-                if c not in range(32):
-                    print("Color values must be between 0 and 31")  # Make exceptions?
-                    return None
+            r = int(ceil(r / 8.3))  # Scale Values to fit in 2/3 of a byte.
+            g = int(ceil(g / 8.3))  # Yes, I know how crazy that sounds.
+            b = int(ceil(b / 8.3))
 
             bits = b | (g << 5) | (r << 10) | (update << 15)  # Bitshift values together
 
             num = struct.pack('H', bits)  # Encode as unsigned long
 
             return num
-
 
     def _send_color(self, r=0, g=0, b=0, update=True):
         if self.MODE == 0:
@@ -78,7 +69,7 @@ class Strip(object):
     def send_colors(self, led_list):
         if len(led_list) < self.LEN:
             diff = self.LEN - len(led_list)
-            led_list.extend([[0,0,0]]*diff)
+            led_list.extend([[0, 0, 0]] * diff)
 
         for k in range(self.LEN):
             r = led_list[k][0]
