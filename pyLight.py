@@ -42,10 +42,7 @@ def unhooked_event(func):
 
 class KeyboardController(object):
     def __init__(self, com):
-        print("initing keyboard controller")
         self.strip = Strip(com, mode=0)
-        print("made strip object")
-
         self.CONFIG_PARAMS = init_parmeters.CONFIG_PARAMETERS
 
         # Get initial interface volume level. Windows Only.
@@ -73,7 +70,7 @@ class KeyboardController(object):
     def begin_control(self):
         keyboard.hook(self.event_hook)
 
-    def disconnect(self):
+    def release_control(self):
         keyboard.unhook_all()
         self.strip.disconnect()
 
@@ -176,44 +173,15 @@ class KeyboardController(object):
 class ScreenshotController(object):
     def __init__(self, com):
         self.strip = Strip(com, mode=1)
-        self.controlling = True
-
-        #self.screenshot_control()
 
     def begin_control(self):
-        pass
+        self.worker = WorkerThread(self.send_major_color)
+        self.worker.start()
 
-    def disconnect(self):
+    def release_control(self):
+        self.worker.stop()
+        self.worker.join()
         self.strip.disconnect()
-
-    def screenshot_control(self):
-        num_clusters = 3
-        ar = np.array([[0, 0], [0, 0]])
-        im = Image.fromarray(ar)  # Init im to prevent exception if first try fails.
-
-        while self.controlling:
-            try:
-                im = ImageGrab.grab()
-            except OSError:
-                pass  # continue using the current image until windows stops being so stupid.
-
-            im = im.resize((192, 108))
-            ar = np.asfarray(im)
-            shape = ar.shape
-            ar = ar.reshape(scipy.product(shape[:2]), shape[2])
-            codes, dist = scipy.cluster.vq.kmeans(ar, num_clusters)
-
-            vecs, dist = scipy.cluster.vq.vq(ar, codes)  # assign codes
-            counts, bins = scipy.histogram(vecs, len(codes))
-
-            index_max = scipy.argmax(counts)  # find most frequent
-            peak = codes[index_max]
-
-            r = int(round(peak[0]))
-            g = int(round(peak[1]))
-            b = int(round(peak[2]))
-
-            self.strip.send_uniform_color(r, g, b)
 
     def send_major_color(self):
         num_clusters = 3
@@ -257,12 +225,8 @@ class WorkerThread(threading.Thread):
         self._stop_event = threading.Event()
 
     def run(self):
-        self.controller = self.worker("COM4")
-
         while not self._stop_event.is_set():
-            self.controller.send_major_color()
-
-        self.controller.disconnect()
+            self.worker()
 
     def stop(self):
         self._stop_event.set()

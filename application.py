@@ -23,72 +23,14 @@ class PyLightApp(Ui_MainWindow):
             self.controlModeComboBox.addItem(key)
 
     def doApply(self):
-        print("Applying")
         control = self.controlModeComboBox.currentText()
+
         if self.controller:
-            print("Controller exists...")
-            self.controller.disconnect()
-            #self.worker.stop()
-            #self.worker.join()
+            self.controller.release_control()
 
         self.controller = pyLight.CONTROL_MODES[control]("COM4")
-        print("made object")
         self.controller.begin_control()
 
-        #self.worker = WorkerThread(self.controller)
-        #self.worker.start()
-        print("end")
-
-
-class WorkerThread(threading.Thread):
-    """"
-    Only works with Screenshot controller at the moment. Need to implement
-    better class structure to approach this from a polymorphic angle.
-    """
-    def __init__(self, worker):
-        super().__init__()
-        self.worker = worker
-        self._stop_event = threading.Event()
-
-    def run(self):
-        self.controller = self.worker("COM4")
-
-        while not self._stop_event.is_set():
-            self.controller.send_major_color()
-
-        self.controller.disconnect()
-
-    def stop(self):
-        self._stop_event.set()
-
-
-class QTworkerThread(QThread):
-    """
-    This does not work... I may do more investigating later or just
-    continue to use built in threading.
-    Perhaps threading.event can be used with Qthread objects?
-    """
-    def __init__(self, worker):
-        QThread.__init__(self)
-        self.worker = worker
-
-    def __del__(self):
-        self.wait()
-
-    def run(self):
-        self.controller = self.worker('COM4')
-        #print("starting")
-        #while True:
-            #time.sleep(1)
-            #print("THis is happening!")
-
-    def stop(self):
-        print("Stopping")
-        #self.controller.controlling = False
-        print("disconnecting")
-        #self.controller.disconnect()
-        print("terminating")
-        self.terminate()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
