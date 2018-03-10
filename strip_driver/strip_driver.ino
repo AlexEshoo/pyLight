@@ -36,10 +36,9 @@ void loop() {
                    // on new incoming data buffer.
 
   if (millis() - timer > 10000) {
-    rainbowCycle(5);
-    timer = millis();  // Reset Timer on idle exit.
+    timer = rainbowCycle(5);
   }
-  else if (MODE == 0) {
+  if (MODE == 0) {
     while (Serial.available() > 59) {
       Serial.readBytes(bytes, 60);
       for (int i=0; i<60; i+=2){
@@ -109,7 +108,7 @@ void breath(int dt) {
   }
 }
 
-void rainbowCycle(uint8_t wait) {
+uint32_t rainbowCycle(uint8_t wait) {
   uint16_t i, j;
   uint32_t timer2 = millis();
   
@@ -118,7 +117,7 @@ void rainbowCycle(uint8_t wait) {
       for (uint16_t k=0; k<strip.numPixels(); k++) {
         strip.setPixelColor(k, strip.Color(0,0,0));
       }
-      return;
+      return millis(); // reset upper timer.
     }
     if (millis() - timer2 > wait){
       for(i=0; i< strip.numPixels(); i++) {
@@ -127,7 +126,7 @@ void rainbowCycle(uint8_t wait) {
           for (uint16_t k=0; k<strip.numPixels(); k++) {
             strip.setPixelColor(k, strip.Color(0,0,0));
           }
-          return;
+          return millis(); // reset upper timer.
         }
       }
       strip.show();
@@ -137,9 +136,10 @@ void rainbowCycle(uint8_t wait) {
       j--;
     }
   }
+  return 0; // keeps the timer longer than idle time for any idle time length
 }
 
-void rainbow(uint8_t wait) {
+uint32_t rainbow(uint8_t wait) {
   // this method needs work
   // interrupt is not proper...
   uint16_t i, j;
@@ -150,7 +150,7 @@ void rainbow(uint8_t wait) {
       for (uint16_t k=0; k<strip.numPixels(); k++) {
         strip.setPixelColor(k, strip.Color(0,0,0));
       }
-      return;
+      return millis(); // reset upper timer.
     }
     if (millis() - timer3 > wait) {
       for(i=0; i<strip.numPixels(); i++) {
@@ -159,7 +159,7 @@ void rainbow(uint8_t wait) {
           for (uint16_t k=0; k<strip.numPixels(); k++) {
             strip.setPixelColor(k, strip.Color(0,0,0));
           }
-          return;
+          return millis(); // reset upper timer.
         }
       }
       timer3 = millis();
@@ -169,6 +169,7 @@ void rainbow(uint8_t wait) {
     }
     strip.show();
   }
+  return 0; // Garuntees upper timer is not reset.
 }
 
 // Input a value 0 to 255 to get a color value.
