@@ -10,6 +10,7 @@ import scipy
 import scipy.misc
 import scipy.cluster
 import numpy as np
+import threading
 
 import init_parmeters
 
@@ -41,8 +42,9 @@ def unhooked_event(func):
 
 class KeyboardController(object):
     def __init__(self, com):
+        print("initing keyboard controller")
         self.strip = Strip(com, mode=0)
-        keyboard.hook(self.event_hook)
+        print("made strip object")
 
         self.CONFIG_PARAMS = init_parmeters.CONFIG_PARAMETERS
 
@@ -68,7 +70,11 @@ class KeyboardController(object):
 
         self.allowed_to_fire = True
 
+    def begin_control(self):
+        keyboard.hook(self.event_hook)
+
     def disconnect(self):
+        keyboard.unhook_all()
         self.strip.disconnect()
 
     def event_hook(self, event):
@@ -174,6 +180,9 @@ class ScreenshotController(object):
 
         #self.screenshot_control()
 
+    def begin_control(self):
+        pass
+
     def disconnect(self):
         self.strip.disconnect()
 
@@ -237,8 +246,30 @@ class ScreenshotController(object):
 CONTROL_MODES = {"Keypresses": KeyboardController,
                  "Screen Color": ScreenshotController, }
 
+class WorkerThread(threading.Thread):
+    """"
+    Only works with Screenshot controller at the moment. Need to implement
+    better class structure to approach this from a polymorphic angle.
+    """
+    def __init__(self, worker):
+        super().__init__()
+        self.worker = worker
+        self._stop_event = threading.Event()
+
+    def run(self):
+        self.controller = self.worker("COM4")
+
+        while not self._stop_event.is_set():
+            self.controller.send_major_color()
+
+        self.controller.disconnect()
+
+    def stop(self):
+        self._stop_event.set()
+
 if __name__ == "__main__":
     controller = KeyboardController('COM4')
+    controller.begin_control()
     #controller = ScreenshotController('COM4')
     #controller.screenshot_control()
     keyboard.wait()  # used to keep application alive.

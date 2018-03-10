@@ -27,13 +27,16 @@ class PyLightApp(Ui_MainWindow):
         control = self.controlModeComboBox.currentText()
         if self.controller:
             print("Controller exists...")
-            self.worker.stop()
-            self.worker.join()
+            self.controller.disconnect()
+            #self.worker.stop()
+            #self.worker.join()
 
-        self.controller = pyLight.CONTROL_MODES[control]
+        self.controller = pyLight.CONTROL_MODES[control]("COM4")
+        print("made object")
+        self.controller.begin_control()
 
-        self.worker = WorkerThread(self.controller)
-        self.worker.start()
+        #self.worker = WorkerThread(self.controller)
+        #self.worker.start()
         print("end")
 
 
