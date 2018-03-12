@@ -10,12 +10,14 @@ import scipy
 import scipy.misc
 import scipy.cluster
 import numpy as np
+import threading
 
 import init_parmeters
 
 
 def unhooked_event(func):
     """
+    For Keyboard Controller:
     Decorator to prevent other callbacks from firing when the decorated callback is firing.
     This is useful for callbacks which take a non-negligible amount of time to execute since it will
     prevent post-execution of events queued during execution.
@@ -39,10 +41,24 @@ def unhooked_event(func):
     return wrapper
 
 
-class KeyboardController(object):
+class Controller(object):
+    def __init__(self, com, mode=0):
+        self.com_port = com
+        self.strip = Strip(self.com_port, mode)
+
+    def init_parameters(self):
+        # Connect to arduino and set the configurable parameters.
+        ...
+
+    def begin_control(self):
+        raise NotImplementedError
+
+    def release_control(self):
+        raise NotImplementedError
+
+class KeyboardController(Controller):
     def __init__(self, com):
-        self.strip = Strip(com, mode=0)
-        keyboard.hook(self.event_hook)
+        super().__init__(com, mode=0)
 
         self.CONFIG_PARAMS = init_parmeters.CONFIG_PARAMETERS
 
@@ -68,7 +84,11 @@ class KeyboardController(object):
 
         self.allowed_to_fire = True
 
-    def disconnect(self):
+    def begin_control(self):
+        keyboard.hook(self.event_hook)
+
+    def release_control(self):
+        keyboard.unhook_all()
         self.strip.disconnect()
 
     def event_hook(self, event):
@@ -167,44 +187,15 @@ class KeyboardController(object):
         return int(ceil(right_min + (value_scaled * right_span)))
 
 
-class ScreenshotController(object):
-    def __init__(self, com):
-        self.strip = Strip(com, mode=1)
-        self.controlling = True
+class ScreenshotController(Controller):
+    def begin_control(self):
+        self.worker = WorkerThread(self.send_major_color)
+        self.worker.start()
 
-        #self.screenshot_control()
-
-    def disconnect(self):
+    def release_control(self):
+        self.worker.stop()
+        self.worker.join()
         self.strip.disconnect()
-
-    def screenshot_control(self):
-        num_clusters = 3
-        ar = np.array([[0, 0], [0, 0]])
-        im = Image.fromarray(ar)  # Init im to prevent exception if first try fails.
-
-        while self.controlling:
-            try:
-                im = ImageGrab.grab()
-            except OSError:
-                pass  # continue using the current image until windows stops being so stupid.
-
-            im = im.resize((192, 108))
-            ar = np.asfarray(im)
-            shape = ar.shape
-            ar = ar.reshape(scipy.product(shape[:2]), shape[2])
-            codes, dist = scipy.cluster.vq.kmeans(ar, num_clusters)
-
-            vecs, dist = scipy.cluster.vq.vq(ar, codes)  # assign codes
-            counts, bins = scipy.histogram(vecs, len(codes))
-
-            index_max = scipy.argmax(counts)  # find most frequent
-            peak = codes[index_max]
-
-            r = int(round(peak[0]))
-            g = int(round(peak[1]))
-            b = int(round(peak[2]))
-
-            self.strip.send_uniform_color(r, g, b)
 
     def send_major_color(self):
         num_clusters = 3
@@ -237,8 +228,26 @@ class ScreenshotController(object):
 CONTROL_MODES = {"Keypresses": KeyboardController,
                  "Screen Color": ScreenshotController, }
 
+class WorkerThread(threading.Thread):
+    """"
+    Only works with Screenshot controller at the moment. Need to implement
+    better class structure to approach this from a polymorphic angle.
+    """
+    def __init__(self, worker):
+        super().__init__()
+        self.worker = worker
+        self._stop_event = threading.Event()
+
+    def run(self):
+        while not self._stop_event.is_set():
+            self.worker()
+
+    def stop(self):
+        self._stop_event.set()
+
 if __name__ == "__main__":
     controller = KeyboardController('COM4')
+    controller.begin_control()
     #controller = ScreenshotController('COM4')
     #controller.screenshot_control()
     keyboard.wait()  # used to keep application alive.

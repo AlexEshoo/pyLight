@@ -22,7 +22,7 @@ class Strip(object):
         comm = serial.Serial(com, 115200, timeout=0.1)
         time.sleep(2)  # Allow Arduino reset to happen to prevent buffer offset
         mode_val = struct.pack('B', mode)
-        comm.write(mode_val)
+        comm.write(mode_val) # Set the serial data processing mode
         time.sleep(2)
 
         return comm

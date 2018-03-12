@@ -1,91 +1,82 @@
 import pyLight
 from gui import Ui_MainWindow
 import sys
+import glob
+import serial
 from PyQt5.QtWidgets import QApplication, QMainWindow
-from PyQt5.QtCore import QThread
-import threading
-import time
+
 
 class PyLightApp(Ui_MainWindow):
-    def __init__(self, window):
+    def __init__(self, main_window_object):
         # Ui_MainWindow.__init__(self)
-        self.setupUi(window)
+        self.setupUi(main_window_object)
         self.controller = None
 
-        self.populateComboBoxes()
+        self.populate_combo_boxes()
         self.connect_slots()
 
-    def connect_slots(self):
-        self.applyButton.clicked.connect(self.doApply)
+        self.com_port = self.serialPortComboBox.currentText()
 
-    def populateComboBoxes(self):
+    def connect_slots(self):
+        self.applyButton.clicked.connect(self.do_apply)
+        self.actionExit.triggered.connect(self.exit)
+
+    def populate_combo_boxes(self):
         for key in pyLight.CONTROL_MODES:
             self.controlModeComboBox.addItem(key)
 
-    def doApply(self):
-        print("Applying")
+        for port in serial_ports():
+            self.serialPortComboBox.addItem(port)
+
+    def do_apply(self):
         control = self.controlModeComboBox.currentText()
+
         if self.controller:
-            print("Controller exists...")
-            self.worker.stop()
-            self.worker.join()
+            self.controller.release_control()
 
-        self.controller = pyLight.CONTROL_MODES[control]
+        self.com_port = self.serialPortComboBox.currentText()
+        print(self.com_port)
+        self.controller = pyLight.CONTROL_MODES[control](self.com_port)
+        print("Beginning Control")
+        self.controller.begin_control()
 
-        self.worker = WorkerThread(self.controller)
-        self.worker.start()
-        print("end")
+    def exit(self):
+        if self.controller:
+            self.controller.release_control()
+
+        QApplication.quit()
 
 
-class WorkerThread(threading.Thread):
-    """"
-    Only works with Screenshot controller at the moment. Need to implement
-    better class structure to approach this from a polymorphic angle.
+def serial_ports():
     """
-    def __init__(self, worker):
-        super().__init__()
-        self.worker = worker
-        self._stop_event = threading.Event()
+        Thanks to: https://stackoverflow.com/questions/12090503/listing-available-com-ports-with-python
+        Lists serial port names
 
-    def run(self):
-        self.controller = self.worker("COM4")
-
-        while not self._stop_event.is_set():
-            self.controller.send_major_color()
-
-        self.controller.disconnect()
-
-    def stop(self):
-        self._stop_event.set()
-
-
-class QTworkerThread(QThread):
+        :raises EnvironmentError:
+            On unsupported or unknown platforms
+        :returns:
+            A list of the serial ports available on the system
     """
-    This does not work... I may do more investigating later or just
-    continue to use built in threading.
-    Perhaps threading.event can be used with Qthread objects?
-    """
-    def __init__(self, worker):
-        QThread.__init__(self)
-        self.worker = worker
+    if sys.platform.startswith('win'):
+        ports = ['COM%s' % (i + 1) for i in range(256)]
+    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        # this excludes your current terminal "/dev/tty"
+        ports = glob.glob('/dev/tty[A-Za-z]*')
+    elif sys.platform.startswith('darwin'):
+        ports = glob.glob('/dev/tty.*')
+    else:
+        raise EnvironmentError('Unsupported platform')
 
-    def __del__(self):
-        self.wait()
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(port)
+            s.close()
+            result.append(port)
+        except (OSError, serial.SerialException):
+            pass
+    return result
 
-    def run(self):
-        self.controller = self.worker('COM4')
-        #print("starting")
-        #while True:
-            #time.sleep(1)
-            #print("THis is happening!")
-
-    def stop(self):
-        print("Stopping")
-        #self.controller.controlling = False
-        print("disconnecting")
-        #self.controller.disconnect()
-        print("terminating")
-        self.terminate()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

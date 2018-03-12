@@ -36,7 +36,7 @@ void loop() {
                    // on new incoming data buffer.
 
   if (millis() - timer > 10000) {
-    timer = rainbow(5);
+    timer = rainbowCycle(5);
   }
   if (MODE == 0) {
     while (Serial.available() > 59) {
