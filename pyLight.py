@@ -17,6 +17,7 @@ import init_parmeters
 
 def unhooked_event(func):
     """
+    For Keyboard Controller:
     Decorator to prevent other callbacks from firing when the decorated callback is firing.
     This is useful for callbacks which take a non-negligible amount of time to execute since it will
     prevent post-execution of events queued during execution.
@@ -40,9 +41,25 @@ def unhooked_event(func):
     return wrapper
 
 
-class KeyboardController(object):
+class Controller(object):
+    def __init__(self, com, mode=0):
+        self.com_port = com
+        self.strip = Strip(self.com_port, mode)
+
+    def init_parameters(self):
+        # Connect to arduino and set the configurable parameters.
+        ...
+
+    def begin_control(self):
+        raise NotImplementedError
+
+    def release_control(self):
+        raise NotImplementedError
+
+class KeyboardController(Controller):
     def __init__(self, com):
-        self.strip = Strip(com, mode=0)
+        super().__init__(com, mode=0)
+
         self.CONFIG_PARAMS = init_parmeters.CONFIG_PARAMETERS
 
         # Get initial interface volume level. Windows Only.
@@ -170,10 +187,7 @@ class KeyboardController(object):
         return int(ceil(right_min + (value_scaled * right_span)))
 
 
-class ScreenshotController(object):
-    def __init__(self, com):
-        self.strip = Strip(com, mode=1)
-
+class ScreenshotController(Controller):
     def begin_control(self):
         self.worker = WorkerThread(self.send_major_color)
         self.worker.start()
