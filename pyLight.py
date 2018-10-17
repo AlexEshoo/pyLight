@@ -56,6 +56,7 @@ class Controller(object):
     def release_control(self):
         raise NotImplementedError
 
+
 class KeyboardController(Controller):
     def __init__(self, com):
         super().__init__(com, mode=0)
@@ -188,6 +189,10 @@ class KeyboardController(Controller):
 
 
 class ScreenshotController(Controller):
+    def __init__(self, com):
+        super().__init__(com, mode=1)  # use mode 1 to send uniform colors and use maximum color depth
+        self.worker = None
+
     def begin_control(self):
         self.worker = WorkerThread(self.send_major_color)
         self.worker.start()
@@ -198,7 +203,6 @@ class ScreenshotController(Controller):
         self.strip.disconnect()
 
     def send_major_color(self):
-        num_clusters = 3
         ar = np.array([[0, 0], [0, 0]])
         im = Image.fromarray(ar)  # Init im to prevent exception if first try fails.
 
@@ -209,9 +213,10 @@ class ScreenshotController(Controller):
 
         im = im.resize((192, 108))
         ar = np.asfarray(im)
+        guess = np.array([[255,0,0], [0,255,0], [0,0,255]])  # initial clusters for deterministic output
         shape = ar.shape
         ar = ar.reshape(scipy.product(shape[:2]), shape[2])
-        codes, dist = scipy.cluster.vq.kmeans(ar, num_clusters)
+        codes, dist = scipy.cluster.vq.kmeans(ar, guess)
 
         vecs, dist = scipy.cluster.vq.vq(ar, codes)  # assign codes
         counts, bins = scipy.histogram(vecs, len(codes))
@@ -225,8 +230,6 @@ class ScreenshotController(Controller):
 
         self.strip.send_uniform_color(r, g, b)
 
-CONTROL_MODES = {"Keypresses": KeyboardController,
-                 "Screen Color": ScreenshotController, }
 
 class WorkerThread(threading.Thread):
     """"
@@ -245,10 +248,14 @@ class WorkerThread(threading.Thread):
     def stop(self):
         self._stop_event.set()
 
+
+CONTROL_MODES = {"Keypresses": KeyboardController,
+                 "Screen Color": ScreenshotController, }
+
+
 if __name__ == "__main__":
-    controller = KeyboardController('COM4')
+    #controller = KeyboardController('COM4')
+    controller = ScreenshotController('COM4')
     controller.begin_control()
-    #controller = ScreenshotController('COM4')
-    #controller.screenshot_control()
     keyboard.wait()  # used to keep application alive.
     # Should be taken care of by UI application in future
